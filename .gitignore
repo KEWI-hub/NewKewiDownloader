@@ -1,0 +1,25 @@
+# ===== ข้อมูลผู้ใช้ — ห้ามขึ้น repo เด็ดขาด =====
+data/
+logs/
+_chromium/
+_profile/
+_tmp/
+settings.json
+queue.json
+cookies.txt
+dropped-urls.txt
+
+# ===== .NET + เครื่องมือภายนอกใน bin/ (ดาวน์โหลดเอง ไม่เก็บใน git) =====
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+*.user
+*.suo
+.vs/
+
+# ===== อื่นๆ =====
+.idea/
+*.swp
+Thumbs.db

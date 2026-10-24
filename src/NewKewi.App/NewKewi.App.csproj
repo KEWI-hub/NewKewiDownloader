@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>NewKewiDownloader</AssemblyName>
+    <RootNamespace>NewKewi.App</RootNamespace>
+    <!-- APP_VERSION — ต้องตรงกับ tag ที่จะ push เสมอ -->
+    <Version>0.1.0</Version>
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\..\assets\app.ico" Link="Resources\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NewKewi.Core\NewKewi.Core.csproj" />
+    <ProjectReference Include="..\NewKewi.Sites\NewKewi.Sites.csproj" />
+    <ProjectReference Include="..\NewKewi.Bridge\NewKewi.Bridge.csproj" />
+  </ItemGroup>
+
+</Project>

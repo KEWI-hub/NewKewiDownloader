@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NewKewi.App/NewKewi.App.csproj" />
+    <Project Path="src/NewKewi.Bridge/NewKewi.Bridge.csproj" />
+    <Project Path="src/NewKewi.Core/NewKewi.Core.csproj" />
+    <Project Path="src/NewKewi.Sites/NewKewi.Sites.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NewKewi.Tests/NewKewi.Tests.csproj" />
+  </Folder>
+</Solution>
