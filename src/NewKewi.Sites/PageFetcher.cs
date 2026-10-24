@@ -32,23 +32,7 @@ public sealed record FetchResult(
 /// </summary>
 public sealed class PageFetcher(IWebClient web, IBrowser browser)
 {
-    /// <summary>ร่องรอยของด่านกันบอท · เจอแล้วต้องขยับไปใช้เบราว์เซอร์จริง</summary>
-    private static readonly string[] BotWallMarks =
-    [
-        "just a moment", "cf-browser-verification", "checking your browser",
-        "__cf_chl", "cf-challenge", "enable javascript and cookies to continue",
-        "ddos-guard", "attention required!",
-    ];
-
-    public static bool LooksLikeBotWall(string html, int status)
-    {
-        if (status is 403 or 503 && html.Length < 100_000) return true;
-        if (html.Length == 0) return false;
-
-        var head = html.Length > 60_000 ? html[..60_000] : html;
-        head = head.ToLowerInvariant();
-        return BotWallMarks.Any(m => head.Contains(m, StringComparison.Ordinal));
-    }
+    public static bool LooksLikeBotWall(string html, int status) => BotWall.Detect(html, status);
 
     public FetchResult Simple(string url, CancellationToken ct)
     {

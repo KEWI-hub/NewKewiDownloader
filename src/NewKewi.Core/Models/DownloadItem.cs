@@ -68,6 +68,19 @@ public sealed class DownloadItem : INotifyPropertyChanged
     [JsonIgnore]
     public int EtaSeconds { get => _etaSeconds; set => Set(ref _etaSeconds, value); }
 
+    private int _fragmentIndex;
+    /// <summary>ชิ้นส่วน HLS ที่โหลดไปแล้ว · 0 = ไม่ใช่ playlist หรือยังไม่เริ่ม</summary>
+    [JsonIgnore]
+    public int FragmentIndex { get => _fragmentIndex; set => Set(ref _fragmentIndex, value); }
+
+    private int _fragmentCount;
+    [JsonIgnore]
+    public int FragmentCount { get => _fragmentCount; set => Set(ref _fragmentCount, value); }
+
+    private DateTimeOffset? _startedAt;
+    [JsonIgnore]
+    public DateTimeOffset? StartedAt { get => _startedAt; set => Set(ref _startedAt, value); }
+
     public DateTimeOffset AddedAt { get; set; } = DateTimeOffset.Now;
     public DateTimeOffset? FinishedAt { get; set; }
 

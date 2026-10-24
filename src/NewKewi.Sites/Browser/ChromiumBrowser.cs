@@ -1,10 +1,17 @@
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using NewKewi.Core;
 
 namespace NewKewi.Sites.Browser;
+
+public sealed record BrowserOptions
+{
+    /// <summary>โฟลเดอร์ส่วนขยายกันโฆษณาที่จะเสียบเข้า Chromium · ว่าง = ไม่โหลด</summary>
+    public string? AdBlockExtensionPath { get; init; }
+
+    /// <summary>รอให้ผู้ใช้กดผ่านด่านกันบอทนานสุดกี่วินาที (โหมดมีหน้าต่าง)</summary>
+    public int BotWallWaitSeconds { get; init; } = 180;
+}
 
 /// <summary>
 /// Chromium พกพาที่แอปคุมเองผ่าน CDP
@@ -15,11 +22,18 @@ namespace NewKewi.Sites.Browser;
 /// เปิด–ปิดใหม่ทุกครั้งที่เรียก ช้ากว่าเลี้ยงไว้แต่เชื่อถือได้กว่ามาก
 /// (เบราว์เซอร์ค้างแล้วแอปค้างตามคือปัญหาที่แพงที่สุดของแอปเก่า)
 /// </summary>
-public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
+public sealed class ChromiumBrowser(
+    AppPaths paths,
+    BrowserIdentity identity,
+    BrowserOptions? options = null) : IBrowser
 {
+    private readonly BrowserOptions _options = options ?? new BrowserOptions();
     private readonly SemaphoreSlim _oneAtATime = new(1, 1);
 
     public bool IsReady => File.Exists(paths.ChromeExe);
+
+    /// <summary>เรียกเมื่อเปิดหน้าต่างให้ผู้ใช้กดผ่านด่านกันบอท — แอปเอาไปขึ้นข้อความบอก</summary>
+    public Action<string>? OnNotice { get; set; }
 
     public async Task<BrowsePage> OpenAsync(
         string url, BrowseMode mode, int waitSeconds, CancellationToken ct)
@@ -31,9 +45,9 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
         Process? chrome = null;
         try
         {
-            var profile = mode == BrowseMode.Visible
-                ? paths.BrowserProfile
-                : paths.BrowserProfile + "-silent";
+            // แยก profile ของสองโหมด เพราะเปิดพร้อมกันไม่ได้ (Chromium ล็อกโฟลเดอร์ไว้)
+            // ทั้งคู่อยู่ใต้ _profile/ เพื่อให้ .gitignore บรรทัดเดียวครอบได้หมด
+            var profile = mode == BrowseMode.Visible ? paths.VisibleProfile : paths.SilentProfile;
             Directory.CreateDirectory(profile);
 
             chrome = Launch(profile, mode);
@@ -46,6 +60,10 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
             await cdp.SendAsync("Network.enable", null, ct).ConfigureAwait(false);
             await cdp.SendAsync("Page.enable", null, ct).ConfigureAwait(false);
 
+            // จำ UA ไว้ให้ HttpClient กับ yt-dlp ใช้ตัวเดียวกัน — จำเป็นกับ cf_clearance
+            var ua = await EvaluateStringAsync(cdp, "navigator.userAgent", ct).ConfigureAwait(false);
+            identity.Set(ua);
+
             await cdp.SendAsync("Page.navigate", new { url }, ct).ConfigureAwait(false);
             await cdp.WaitForEventAsync("Page.loadEventFired", waitSeconds, ct).ConfigureAwait(false);
 
@@ -55,17 +73,58 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
 
             var html = await EvaluateStringAsync(cdp, "document.documentElement.outerHTML", ct)
                 .ConfigureAwait(false);
-            var finalUrl = await EvaluateStringAsync(cdp, "location.href", ct).ConfigureAwait(false);
 
+            if (mode == BrowseMode.Visible && BotWall.Detect(html, 200))
+                html = await WaitForHumanAsync(cdp, url, ct).ConfigureAwait(false);
+
+            var finalUrl = await EvaluateStringAsync(cdp, "location.href", ct).ConfigureAwait(false);
             await SaveCookiesAsync(cdp, ct).ConfigureAwait(false);
 
-            return new BrowsePage(html, string.IsNullOrEmpty(finalUrl) ? url : finalUrl, cdp.Snapshot());
+            var adBlockActive = await IsAdBlockActiveAsync(cdp, ct).ConfigureAwait(false);
+
+            return new BrowsePage(html, string.IsNullOrEmpty(finalUrl) ? url : finalUrl,
+                cdp.Snapshot(), ua, adBlockActive);
         }
         finally
         {
             Kill(chrome);
             _oneAtATime.Release();
         }
+    }
+
+    /// <summary>
+    /// รอให้ **ผู้ใช้** กดผ่านด่านกันบอทในหน้าต่างที่เปิดอยู่
+    ///
+    /// แอปไม่ได้แก้โจทย์ให้ — มันแค่เปิดเบราว์เซอร์จริงค้างไว้ แล้วคอยดูว่าหน้าเปลี่ยนไปหรือยัง
+    /// ผ่านแล้วค่อยเก็บ cookie ที่ได้ไปใช้ต่อ
+    /// </summary>
+    private async Task<string> WaitForHumanAsync(CdpSession cdp, string url, CancellationToken ct)
+    {
+        OnNotice?.Invoke($"เว็บ {HostOf(url)} กันบอทอยู่ — กดยืนยันในหน้าต่างที่เปิดขึ้นมา แล้วแอปจะไปต่อเอง");
+
+        var deadline = DateTime.UtcNow.AddSeconds(_options.BotWallWaitSeconds);
+        var html = "";
+
+        while (DateTime.UtcNow < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            await Task.Delay(1500, ct).ConfigureAwait(false);
+
+            html = await EvaluateStringAsync(cdp, "document.documentElement.outerHTML", ct)
+                .ConfigureAwait(false);
+
+            if (html.Length > 0 && !BotWall.Detect(html, 200))
+            {
+                OnNotice?.Invoke("ผ่านด่านแล้ว กำลังไปต่อ");
+                // ให้หน้าจริงโหลดเสร็จและยิง request ของมันออกมาก่อน
+                await Task.Delay(2500, ct).ConfigureAwait(false);
+                return await EvaluateStringAsync(cdp, "document.documentElement.outerHTML", ct)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        OnNotice?.Invoke($"รอจนหมดเวลาแล้วยังผ่านด่านของ {HostOf(url)} ไม่ได้");
+        return html;
     }
 
     private Process Launch(string profile, BrowseMode mode)
@@ -77,28 +136,37 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
             CreateNoWindow = mode == BrowseMode.Silent,
         };
 
-        foreach (var a in new[]
-                 {
-                     "--remote-debugging-port=0",
-                     "--user-data-dir=" + profile,
-                     "--no-first-run",
-                     "--no-default-browser-check",
-                     "--disable-features=Translate,OptimizationHints",
-                     "--disable-background-networking",
-                     "--disable-sync",                 // ไม่มีบัญชีให้ซิงก์อยู่แล้ว
-                     "--mute-audio",
-                     "--window-size=1280,860",
-                     "about:blank",
-                 })
-        {
-            psi.ArgumentList.Add(a);
-        }
-
+        var args = new List<string>();
         if (mode == BrowseMode.Silent)
         {
-            psi.ArgumentList.Insert(0, "--headless=new");
-            psi.ArgumentList.Insert(1, "--disable-gpu");
+            args.Add("--headless=new");
+            args.Add("--disable-gpu");
         }
+
+        args.AddRange(
+        [
+            "--remote-debugging-port=0",
+            "--user-data-dir=" + profile,
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-features=Translate,OptimizationHints",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--mute-audio",
+            "--window-size=1280,860",
+        ]);
+
+        // ส่วนขยายกันโฆษณา · ทำให้หน้าเว็บที่เต็มไปด้วย popup แกะลิงก์ได้สะอาดกว่ามาก
+        // และตอนผู้ใช้ต้องกดผ่านด่านเอง จะได้ไม่มีโฆษณามาเด้งทับ
+        var ext = _options.AdBlockExtensionPath;
+        if (!string.IsNullOrWhiteSpace(ext) && Directory.Exists(ext))
+        {
+            args.Add("--disable-extensions-except=" + ext);
+            args.Add("--load-extension=" + ext);
+        }
+
+        args.Add("about:blank");
+        foreach (var a in args) psi.ArgumentList.Add(a);
 
         return Process.Start(psi)
             ?? throw new InvalidOperationException("เปิด Chromium ไม่ขึ้น");
@@ -173,9 +241,24 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
     }
 
     /// <summary>
-    /// เขียน cookie ของ**แอปเอง**ลงไฟล์แบบ Netscape ให้ yt-dlp กินต่อได้
-    /// ไฟล์นี้ลบได้ทั้งก้อนจากหน้าตั้งค่า และไม่เคยมี cookie ของเบราว์เซอร์ผู้ใช้ปนอยู่
+    /// ส่วนขยายกันโฆษณาทำงานอยู่จริงไหม
+    ///
+    /// ดูจากร่องรอยที่ <c>page-world.js</c> ทิ้งไว้: มันล็อก <c>window.open</c> ให้เขียนทับไม่ได้
+    /// เช็คแบบนี้เชื่อถือได้กว่าการดูว่า Chromium รับธง --load-extension ไปหรือยัง
+    /// เพราะส่วนขยายที่ manifest พังจะโหลดไม่ขึ้นโดยไม่มี error ให้เห็น
     /// </summary>
+    private async Task<bool> IsAdBlockActiveAsync(CdpSession cdp, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(_options.AdBlockExtensionPath)) return false;
+
+        var answer = await EvaluateStringAsync(cdp,
+            "String(Object.getOwnPropertyDescriptor(window, 'open')?.writable === false)", ct)
+            .ConfigureAwait(false);
+
+        return answer == "true";
+    }
+
+    /// <summary>เขียน cookie ของ**แอปเอง**ลงไฟล์แบบ Netscape ให้ yt-dlp กินต่อได้</summary>
     private async Task SaveCookiesAsync(CdpSession cdp, CancellationToken ct)
     {
         try
@@ -183,31 +266,19 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
             var r = await cdp.SendAsync("Network.getAllCookies", null, ct).ConfigureAwait(false);
             if (!r.TryGetProperty("cookies", out var cookies)) return;
 
-            var sb = new StringBuilder();
-            sb.AppendLine("# Netscape HTTP Cookie File");
-            sb.AppendLine("# เขียนโดย New Kewi Video Downloader — cookie ของแอปเอง ไม่ใช่ของเบราว์เซอร์ผู้ใช้");
-
+            var records = new List<CookieRecord>();
             foreach (var c in cookies.EnumerateArray())
             {
-                var domain = Get(c, "domain");
-                if (domain.Length == 0) continue;
-
                 var expires = c.TryGetProperty("expires", out var e) && e.ValueKind == JsonValueKind.Number
                     ? (long)Math.Max(0, e.GetDouble())
                     : 0;
 
-                sb.Append(domain).Append('\t')
-                  .Append(domain.StartsWith('.') ? "TRUE" : "FALSE").Append('\t')
-                  .Append(Get(c, "path") is { Length: > 0 } p ? p : "/").Append('\t')
-                  .Append(c.TryGetProperty("secure", out var s) && s.GetBoolean() ? "TRUE" : "FALSE").Append('\t')
-                  .Append(expires.ToString(CultureInfo.InvariantCulture)).Append('\t')
-                  .Append(Get(c, "name")).Append('\t')
-                  .Append(Get(c, "value")).Append('\n');
+                records.Add(new CookieRecord(
+                    Get(c, "domain"), Get(c, "path"), Get(c, "name"), Get(c, "value"),
+                    c.TryGetProperty("secure", out var s) && s.GetBoolean(), expires));
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(paths.CookieJar)!);
-            await File.WriteAllTextAsync(paths.CookieJar, sb.ToString(),
-                new UTF8Encoding(false), ct).ConfigureAwait(false);
+            NetscapeCookieFile.Write(paths.CookieJar, records);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -217,6 +288,9 @@ public sealed class ChromiumBrowser(AppPaths paths) : IBrowser
 
     private static string Get(JsonElement e, string name)
         => e.TryGetProperty(name, out var v) ? v.GetString() ?? "" : "";
+
+    private static string HostOf(string url)
+        => Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host : url;
 
     private static void Kill(Process? p)
     {

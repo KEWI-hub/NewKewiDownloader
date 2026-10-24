@@ -17,7 +17,8 @@ public sealed class DownloadEngine(
     AppPaths paths,
     AppSettings settings,
     IProcessRunner runner,
-    IStreamResolver? resolver = null)
+    IStreamResolver? resolver = null,
+    BrowserIdentity? identity = null)
 {
     private readonly Remuxer _remuxer = new(paths, runner);
 
@@ -73,10 +74,12 @@ public sealed class DownloadEngine(
         item.Status = DownloadStatus.Downloading;
         item.Progress = 0;
         item.FailureReason = null;
+        item.StartedAt = DateTimeOffset.Now;
 
         var ctx = new YtDlpArgs.Context(
             paths, settings, tempDir, resultPathFile,
-            File.Exists(paths.CookieJar) ? paths.CookieJar : null);
+            File.Exists(paths.CookieJar) ? paths.CookieJar : null,
+            identity?.UserAgent);
 
         var result = await RunYtDlpAsync(item, ctx, ct).ConfigureAwait(false);
 
@@ -214,7 +217,13 @@ public sealed class DownloadEngine(
         item.TotalBytes = p.TotalBytes;
         item.SpeedBytesPerSecond = p.SpeedBytesPerSecond;
         item.EtaSeconds = p.EtaSeconds;
+        item.FragmentIndex = p.FragmentIndex;
+        item.FragmentCount = p.FragmentCount;
         if (p.TotalBytes > 0) item.Progress = p.Percent;
+
+        // playlist ที่บอกขนาดรวมไม่ได้ ยังบอกความคืบหน้าจากจำนวนชิ้นส่วนได้
+        else if (p.FragmentCount > 0)
+            item.Progress = Math.Clamp(p.FragmentIndex * 100.0 / p.FragmentCount, 0, 100);
     }
 
     private bool ShouldSkip(DownloadItem item)

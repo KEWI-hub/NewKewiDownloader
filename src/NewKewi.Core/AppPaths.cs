@@ -37,8 +37,19 @@ public sealed class AppPaths
 
     public string ChromeExe => Path.Combine(Chromium, "chrome-win64", "chrome.exe");
 
-    /// <summary>profile ของเบราว์เซอร์แอป · แยกจากของผู้ใช้ 100% ลบทิ้งได้ทั้งก้อน</summary>
+    /// <summary>
+    /// รากของ profile เบราว์เซอร์แอป · แยกจากของผู้ใช้ 100% ลบทิ้งได้ทั้งก้อน
+    ///
+    /// โหมดเงียบกับโหมดมีหน้าต่างต้องใช้คนละ profile (Chromium ล็อกโฟลเดอร์ไว้ เปิดพร้อมกันไม่ได้)
+    /// แต่ทั้งคู่ต้องอยู่**ใต้โฟลเดอร์เดียวกัน** ไม่ใช่วางเป็น <c>_profile-silent</c> ข้างๆ
+    /// เพราะข้างในมี History / Cookies / Login Data ของเบราว์เซอร์แอป
+    /// กฎ <c>.gitignore</c> บรรทัดเดียวต้องครอบได้หมด ไม่งั้นมีวันหลุดขึ้น repo
+    /// </summary>
     public string BrowserProfile => Path.Combine(Root, "_profile");
+
+    public string SilentProfile => Path.Combine(BrowserProfile, "silent");
+
+    public string VisibleProfile => Path.Combine(BrowserProfile, "visible");
 
     public string YtDlp => Path.Combine(Bin, "yt-dlp.exe");
     public string FFmpeg => Path.Combine(Bin, "ffmpeg.exe");

@@ -1,9 +1,11 @@
 # ===== ข้อมูลผู้ใช้ — ห้ามขึ้น repo เด็ดขาด =====
+# profile ของเบราว์เซอร์แอปมี History / Cookies / Login Data อยู่ข้างใน
+# ใช้ _profile* กันไว้ด้วย เผื่อมีใครเผลอสร้างโฟลเดอร์ชื่อ _profile-อะไรสักอย่าง ข้างๆ
 data/
 logs/
-_chromium/
-_profile/
-_tmp/
+_chromium*/
+_profile*/
+_tmp*/
 settings.json
 queue.json
 cookies.txt

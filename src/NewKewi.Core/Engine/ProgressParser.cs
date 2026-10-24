@@ -6,7 +6,9 @@ public readonly record struct DownloadProgress(
     long DownloadedBytes,
     long TotalBytes,
     double SpeedBytesPerSecond,
-    int EtaSeconds)
+    int EtaSeconds,
+    int FragmentIndex = 0,
+    int FragmentCount = 0)
 {
     public double Percent => TotalBytes > 0
         ? Math.Clamp(DownloadedBytes * 100.0 / TotalBytes, 0, 100)
@@ -39,7 +41,10 @@ public static class ProgressParser
             (long)downloaded,
             (long)total,
             Num(parts[4]),
-            (int)Num(parts[5]));
+            (int)Num(parts[5]),
+            // ชิ้นส่วนของ HLS · บรรทัดรุ่นเก่าไม่มี 2 ช่องนี้ ถือว่าเป็น 0
+            parts.Length > 6 ? (int)Num(parts[6]) : 0,
+            parts.Length > 7 ? (int)Num(parts[7]) : 0);
         return true;
     }
 

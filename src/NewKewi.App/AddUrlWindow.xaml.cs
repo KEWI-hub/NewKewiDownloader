@@ -30,6 +30,13 @@ public partial class AddUrlWindow : Window
     /// <summary>ลิงก์ที่ผู้ใช้ใส่ แยกบรรทัดแล้วตัดอันที่ไม่ใช่ http(s) ทิ้ง</summary>
     public IReadOnlyList<string> Urls { get; private set; } = [];
 
+    /// <summary>เติมลิงก์ไว้ให้ล่วงหน้า (เช่นเอามาจากแถวที่เลือกอยู่ในคิว)</summary>
+    public void SetUrl(string url)
+    {
+        UrlBox.Text = url;
+        UrlBox.SelectAll();
+    }
+
     private void OnOk(object sender, RoutedEventArgs e)
     {
         Urls = UrlBox.Text

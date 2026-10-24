@@ -17,6 +17,12 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
 {
     private const int MaxFrameDepth = 3;
 
+    /// <summary>
+    /// ยอมเปิดหน้าต่างให้ผู้ใช้กดผ่านด่านกันบอทเองไหม
+    /// ปิดไว้ตอนทำงานเป็นชุดใหญ่ที่ไม่มีคนนั่งเฝ้า จะได้ไม่มีหน้าต่างเด้งค้าง
+    /// </summary>
+    public bool AllowInteractiveBotWall { get; set; } = true;
+
     public ResolveOutcome Resolve(string url, CancellationToken ct)
         => ResolveAsync(url, ct).GetAwaiter().GetResult();
 
@@ -25,11 +31,16 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
         var trail = new List<string>();
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var page = await fetcher.FetchAsync(url, allowVisible: false, ct).ConfigureAwait(false);
+        // allowVisible = true แปลว่าถ้าชั้น 1–2 ยังติดด่าน ให้เปิดหน้าต่างจริงรอผู้ใช้กดผ่านเอง
+        var page = await fetcher.FetchAsync(url, AllowInteractiveBotWall, ct).ConfigureAwait(false);
         trail.Add($"fetch:{page.Layer} status={page.Status} bytes={page.Html.Length}");
 
-        if (PageFetcher.LooksLikeBotWall(page.Html, page.Status))
-            return Failed("เว็บกันบอทอยู่ ต้องเปิดผ่านเบราว์เซอร์แล้วกดยืนยันก่อน", trail);
+        if (BotWall.Detect(page.Html, page.Status))
+        {
+            return Failed(AllowInteractiveBotWall
+                ? "ผ่านด่านกันบอทของเว็บนี้ไม่ได้ แม้เปิดหน้าต่างให้กดยืนยันแล้ว"
+                : "เว็บกันบอทอยู่ ต้องเปิดผ่านเบราว์เซอร์แล้วกดยืนยันก่อน", trail);
+        }
 
         var title = ExtractTitle(page.Html);
 

@@ -1,4 +1,5 @@
 using System.Net;
+using NewKewi.Core;
 
 namespace NewKewi.Sites;
 
@@ -29,10 +30,17 @@ public sealed class WebClient : IWebClient, IDisposable
         "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
 
     private readonly HttpClient _http;
+    private readonly string? _cookieJar;
+    private readonly BrowserIdentity? _identity;
+    private DateTime _cookiesLoadedAt = DateTime.MinValue;
 
-    public WebClient(TimeSpan? timeout = null)
+    public WebClient(TimeSpan? timeout = null, string? cookieJarPath = null,
+        BrowserIdentity? identity = null)
     {
         Cookies = new CookieContainer();
+        _cookieJar = cookieJarPath;
+        _identity = identity;
+
         var handler = new HttpClientHandler
         {
             CookieContainer = Cookies,
@@ -45,6 +53,23 @@ public sealed class WebClient : IWebClient, IDisposable
 
     /// <summary>cookie ที่แอปเก็บเอง — ล้างทิ้งได้ทั้งก้อนจากหน้าตั้งค่า</summary>
     public CookieContainer Cookies { get; }
+
+    /// <summary>
+    /// ดึง cookie ที่เบราว์เซอร์ของแอปเพิ่งเก็บมาเข้ามาใช้ ถ้าไฟล์ใหม่กว่าที่เคยอ่าน
+    ///
+    /// นี่คือขั้นที่ทำให้การฝ่าด่านกันบอทมีผลจริง: ผู้ใช้กดผ่านในหน้าต่างเบราว์เซอร์
+    /// ได้ <c>cf_clearance</c> มา แล้ว HttpClient ต้องใช้ cookie ตัวเดียวกันถึงจะผ่านตาม
+    /// </summary>
+    private void RefreshCookiesIfNewer()
+    {
+        if (_cookieJar is null) return;
+
+        var written = NetscapeCookieFile.LastWritten(_cookieJar);
+        if (written <= _cookiesLoadedAt) return;
+
+        _cookiesLoadedAt = written;
+        NetscapeCookieFile.LoadInto(_cookieJar, Cookies);
+    }
 
     public WebResponse Get(string url, IReadOnlyDictionary<string, string> headers, CancellationToken ct)
         => Send(new HttpRequestMessage(HttpMethod.Get, url), headers, ct);
@@ -61,7 +86,12 @@ public sealed class WebClient : IWebClient, IDisposable
 
     private WebResponse Send(HttpRequestMessage req, IReadOnlyDictionary<string, string> headers, CancellationToken ct)
     {
-        req.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+        RefreshCookiesIfNewer();
+
+        // ต้องเป็น UA ตัวเดียวกับที่เบราว์เซอร์ใช้ตอนได้ cookie มา ไม่งั้น cf_clearance ใช้ไม่ได้
+        var ua = _identity?.UserAgent;
+        req.Headers.TryAddWithoutValidation("User-Agent",
+            string.IsNullOrWhiteSpace(ua) ? DefaultUserAgent : ua);
         req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9,th;q=0.8");
 
         foreach (var (k, v) in headers)

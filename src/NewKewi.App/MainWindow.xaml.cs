@@ -23,11 +23,13 @@ public partial class MainWindow : Window
     private readonly AppPaths _paths;
     private readonly AppSettings _settings;
     private readonly SiteRegistry _registry;
+    private readonly BrowserIdentity _identity;
     private readonly WebClient _web;
     private readonly ChromiumBrowser _browser;
     private readonly DownloadQueue _queue;
     private readonly ICollectionView _view;
     private readonly DispatcherTimer _tick;
+    private readonly TrayIcon _tray;
 
     public MainWindow()
     {
@@ -45,15 +47,31 @@ public partial class MainWindow : Window
         _registry = new SiteRegistry(new AppPathsView(_paths.LuaModules, _paths.LocalModules));
         _registry.Load();
 
-        _web = new WebClient(TimeSpan.FromSeconds(_settings.SocketTimeoutSeconds is > 0 and var t ? t : 30));
-        _browser = new ChromiumBrowser(_paths);
+        // UA ของเบราว์เซอร์ต้องใช้ร่วมกันทุกชั้น ไม่งั้น cookie ที่ฝ่าด่านมาได้จะใช้ไม่ได้
+        _identity = new BrowserIdentity(_paths);
 
-        var resolver = new SiteResolver(
-            new LuaResolver(_registry, _web, _browser),
-            new GenericResolver(new PageFetcher(_web, _browser), _web, _browser));
+        _web = new WebClient(
+            TimeSpan.FromSeconds(_settings.SocketTimeoutSeconds > 0 ? _settings.SocketTimeoutSeconds : 30),
+            _paths.CookieJar, _identity);
+
+        _browser = new ChromiumBrowser(_paths, _identity, new BrowserOptions
+        {
+            AdBlockExtensionPath = ResolveAdBlockPath(),
+            BotWallWaitSeconds = _settings.BotWallWaitSeconds,
+        })
+        {
+            OnNotice = message => Dispatcher.Invoke(() => StatusText.Text = message),
+        };
+
+        var generic = new GenericResolver(new PageFetcher(_web, _browser), _web, _browser)
+        {
+            AllowInteractiveBotWall = _settings.AllowInteractiveBotWall,
+        };
+
+        var resolver = new SiteResolver(new LuaResolver(_registry, _web, _browser), generic);
 
         _queue = new DownloadQueue(_paths, _settings,
-            new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver));
+            new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver, _identity));
         _queue.Load();
 
         _view = CollectionViewSource.GetDefaultView(_queue.Items);
@@ -68,8 +86,41 @@ public partial class MainWindow : Window
         _tick.Tick += (_, _) => RefreshStatus();
         _tick.Start();
 
+        _tray = new TrayIcon(this, Path.Combine(_paths.Root, "assets", "app.ico"));
+        _queue.ItemFinished += OnItemFinished;
+
         RefreshStatus();
         WarnIfToolsMissing();
+    }
+
+    /// <summary>คิวจบแล้วบอกผ่านถาดระบบ · ผู้ใช้จะได้ไม่ต้องนั่งเฝ้าหน้าต่าง</summary>
+    private void OnItemFinished(object? sender, DownloadItem item)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            RefreshStatus();
+            if (_queue.Items.Any(i => !i.IsFinished)) return;
+
+            var done = _queue.Items.Count(i => i.Status == DownloadStatus.Done);
+            var failed = _queue.Items.Count(i => i.Status == DownloadStatus.Failed);
+            _tray.Notify("คิวจบแล้ว",
+                failed > 0 ? $"เสร็จ {done} · ล้มเหลว {failed}" : $"เสร็จครบ {done} รายการ");
+        });
+    }
+
+    /// <summary>
+    /// หาโฟลเดอร์ส่วนขยายกันโฆษณา
+    /// ตั้งค่าไว้ก็ใช้ตามนั้น · ไม่ได้ตั้งก็มองหา <c>extensions\ad-skipper</c> ข้างตัวแอป
+    /// ไม่เจอก็ไม่เป็นไร แค่ไม่โหลดส่วนขยาย
+    /// </summary>
+    private string? ResolveAdBlockPath()
+    {
+        var configured = _settings.AdBlockExtensionPath;
+        if (!string.IsNullOrWhiteSpace(configured))
+            return Directory.Exists(configured) ? configured : null;
+
+        var beside = Path.Combine(_paths.Root, "extensions", "ad-skipper");
+        return Directory.Exists(beside) ? beside : null;
     }
 
     private void WarnIfToolsMissing()
@@ -153,10 +204,71 @@ public partial class MainWindow : Window
 
     private void OnRowDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        // เฟส 5: หน้าต่าง progress ต่องานพร้อมแถบของแต่ละ channel แบบ IDM
         var item = Selected().FirstOrDefault();
-        if (item?.OutputFile is { } f && File.Exists(f))
-            Process.Start(new ProcessStartInfo(f) { UseShellExecute = true });
+        if (item is null) return;
+        new JobDetailWindow(item, _settings) { Owner = this }.Show();
+    }
+
+    private void OnShowSites(object sender, RoutedEventArgs e)
+        => new SitesWindow(_registry) { Owner = this }.ShowDialog();
+
+    private void OnOpenSettings(object sender, RoutedEventArgs e)
+    {
+        var dlg = new SettingsWindow(_settings) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+
+        new SettingsStore(_paths).Save(_settings);
+        MessageBox.Show(this,
+            "บันทึกแล้ว · บางอย่าง (จำนวนช่อง, ส่วนขยาย, เบราว์เซอร์) จะมีผลเต็มที่เมื่อเปิดแอปใหม่",
+            "ตั้งค่า", MessageBoxButton.OK, MessageBoxImage.Information);
+        RefreshStatus();
+    }
+
+    /// <summary>
+    /// เปิดเบราว์เซอร์จริงให้ผู้ใช้กดผ่านด่านกันบอทของเว็บนั้นเอง แล้วเก็บ cookie ไว้ใช้ต่อ
+    ///
+    /// แอปไม่ได้แก้โจทย์ให้ — มันแค่เปิดหน้าต่างค้างไว้แล้วรอดูว่าหน้าเปลี่ยนหรือยัง
+    /// จากการสำรวจจริง pornavhd.com และ supjav.com ต้องมาทางนี้ Chromium แบบเงียบผ่านเองไม่ได้
+    /// </summary>
+    private async void OnPassBotWall(object sender, RoutedEventArgs e)
+    {
+        if (!_browser.IsReady)
+        {
+            MessageBox.Show(this,
+                "ยังไม่ได้ติดตั้ง Chromium พกพา — กด \"เพิ่มลิงก์\" แล้วลองโหลดสักครั้ง " +
+                "แอปจะโหลด Chromium มาให้เอง",
+                "ผ่านด่านเว็บ", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var seed = Selected().FirstOrDefault()?.SourceUrl ?? "";
+        var dlg = new AddUrlWindow { Owner = this, Title = "เปิดเว็บเพื่อกดผ่านด่าน" };
+        if (seed.Length > 0) dlg.SetUrl(seed);
+        if (dlg.ShowDialog() != true) return;
+
+        var url = dlg.Urls.FirstOrDefault();
+        if (url is null) return;
+
+        BotWallButton.IsEnabled = false;
+        StatusText.Text = "กำลังเปิดเบราว์เซอร์…";
+        try
+        {
+            var page = await Task.Run(() => _browser.OpenAsync(
+                url, BrowseMode.Visible, 30, CancellationToken.None));
+
+            var stillWalled = BotWall.Detect(page.Html, 200);
+            StatusText.Text = stillWalled
+                ? "ยังผ่านด่านไม่ได้ — ลองใหม่อีกครั้งหรือรอสักพัก"
+                : $"ผ่านแล้ว · เก็บ cookie ของ {new Uri(url).Host} ไว้ใช้กับการโหลดแล้ว";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "เปิดเบราว์เซอร์ไม่สำเร็จ: " + ex.Message.Split('\n')[0];
+        }
+        finally
+        {
+            BotWallButton.IsEnabled = true;
+        }
     }
 
     private void OnCategoryChanged(object sender, SelectionChangedEventArgs e)
@@ -182,6 +294,7 @@ public partial class MainWindow : Window
         _tick.Stop();
         _queue.Stop();
         _queue.Save();
+        _tray.Dispose();   // ไม่ทำแล้วจะเหลือไอคอนผีค้างในถาดระบบ
         base.OnClosing(e);
     }
 }

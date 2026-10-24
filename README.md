@@ -4,9 +4,10 @@ A Windows video downloader with an IDM-style interface, per-site Lua config modu
 parallel multi-channel downloads, and a browser extension that puts a download panel
 over any video player.
 
-**Status: phase 3 of 8 — per-site Lua configs work.** Paste links, they download in parallel and
-come out as mp4; sites with a Lua module get their real stream resolved first. The portable browser
-and the extension are still to come.
+**Status: phase 5 of 8 — usable.** Paste links and they download in parallel as mp4, per-site Lua
+configs resolve the real stream, the portable Chromium gets past bot walls with one click from you,
+and the interface has the queue, a per-job detail window, settings and a tray icon. The browser
+extension that puts a download button over a video player is still to come.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 
 ## Highlights
@@ -104,6 +105,23 @@ dotnet test --settings tests/NewKewi.Tests/live.runsettings
 ---
 
 ## Changelog
+
+### v0.5.0 — 2026-10-25
+- **ฝ่าด่านกันบอทได้จริง** — ชั้นที่ 3 เปิดหน้าต่างเบราว์เซอร์ค้างไว้ คอยดูจนหน้าเปลี่ยน
+  แล้วเก็บ cookie ไปใช้ต่อ · แอปไม่ได้แก้โจทย์ให้ คนเป็นคนกดเอง
+- **UA ตัวเดียวกันทุกชั้น** (`BrowserIdentity`) — Chromium, HttpClient และ yt-dlp ใช้ UA เดียวกัน
+  เพราะ `cf_clearance` ผูกกับ UA ที่ใช้ตอนได้มันมา · ไม่ตรงกันคือเจอด่านซ้ำทั้งที่เพิ่งกดผ่าน
+- `WebClient` โหลด `cookies.txt` ใหม่เองเมื่อไฟล์เปลี่ยน ไม่ต้องรีสตาร์ตหลังผ่านด่าน
+- **ปุ่ม "ผ่านด่านเว็บ"** บน toolbar · เปิดเว็บให้กดผ่านล่วงหน้าได้โดยไม่ต้องรอให้งานล้มเหลวก่อน
+- **เสียบส่วนขยายกันโฆษณาเข้า Chromium พกพา** (`AdBlockExtensionPath`)
+  และตรวจว่ามันทำงานจริงบนหน้าเว็บ ไม่ใช่แค่ส่งธงไปแล้วเชื่อว่าโหลดขึ้น
+- **หน้าต่างรายละเอียดงาน** (ดับเบิลคลิกที่แถว) — แถบรวม, แถบแบ่งชิ้นส่วนของ HLS,
+  ความเร็ว, เวลาที่เหลือ, เวลาที่ใช้ไป, ลิงก์สตรีมจริง, config ที่ใช้
+- **หน้าตั้งค่า** และ **หน้าเว็บที่รองรับ** (โชว์ไฟล์ config ที่โหลดไม่ขึ้นพร้อมเหตุผลด้วย)
+- **ไอคอนถาดระบบ** · ย่อลงถาดได้ คิวจบแล้วเด้งบอก · ปิดแอปแล้วไอคอนหายไม่ค้าง
+- ปุ่มล้าง cookie และ profile ของแอปในหน้าตั้งค่า
+- ความคืบหน้าอ่าน `fragment_index` / `fragment_count` เพิ่ม — playlist ที่บอกขนาดรวมไม่ได้
+  ก็ยังรู้เปอร์เซ็นต์จากจำนวนชิ้นส่วน
 
 ### v0.4.0 — 2026-10-25
 - **ชั้นดึงหน้าเว็บ 3 ชั้น** — `PageFetcher` ไล่จาก HttpClient → Chromium เงียบ → Chromium มีหน้าต่าง

@@ -67,7 +67,19 @@
                         <TextBlock Style="{StaticResource ToolLabel}" Text="เปิดโฟลเดอร์" />
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" IsEnabled="False">
+                <Button x:Name="BotWallButton" Style="{StaticResource ToolButton}" Click="OnPassBotWall">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE72E;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="ผ่านด่านเว็บ" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Click="OnShowSites">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7B3;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="เว็บที่รองรับ" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Click="OnOpenSettings">
                     <StackPanel>
                         <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE713;" />
                         <TextBlock Style="{StaticResource ToolLabel}" Text="ตั้งค่า" />

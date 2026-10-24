@@ -3,7 +3,10 @@ namespace NewKewi.Sites.Browser;
 public sealed record BrowsePage(
     string Html,
     string FinalUrl,
-    IReadOnlyList<CapturedRequest> Requests)
+    IReadOnlyList<CapturedRequest> Requests,
+    string UserAgent = "",
+    /// <summary>ส่วนขยายกันโฆษณาทำงานอยู่จริงบนหน้านี้ไหม</summary>
+    bool AdBlockActive = false)
 {
     public static readonly BrowsePage Empty = new("", "", []);
     public bool HasHtml => Html.Length > 0;

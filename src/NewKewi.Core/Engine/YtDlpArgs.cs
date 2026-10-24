@@ -15,14 +15,17 @@ public static class YtDlpArgs
     private const string ProgressTemplate =
         "download:" + ProgressPrefix +
         "|%(progress.downloaded_bytes)s|%(progress.total_bytes)s" +
-        "|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s";
+        "|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s" +
+        // จำนวนชิ้นส่วนของ HLS — ใช้วาดแถบแบ่งช่วงในหน้าต่างรายละเอียด
+        "|%(progress.fragment_index)s|%(progress.fragment_count)s";
 
     public sealed record Context(
         AppPaths Paths,
         AppSettings Settings,
         string TempDir,
         string ResultPathFile,
-        string? CookieJar);
+        string? CookieJar,
+        string? UserAgent = null);
 
     public static List<string> Build(DownloadItem item, Context ctx)
     {
@@ -110,9 +113,12 @@ public static class YtDlpArgs
             }
         }
 
-        // ---- cookie ----
+        // ---- cookie + ตัวตนของเบราว์เซอร์ ----
         // ใช้ jar ของแอปเองเท่านั้น · ห้ามเพิ่ม --cookies-from-browser กลับมาเด็ดขาด
         if (!string.IsNullOrEmpty(ctx.CookieJar)) { a.Add("--cookies"); a.Add(ctx.CookieJar); }
+
+        // UA ต้องตรงกับตอนที่เก็บ cookie มา ไม่งั้น cf_clearance ที่ผู้ใช้อุตส่าห์กดผ่านมาจะใช้ไม่ได้
+        if (!string.IsNullOrWhiteSpace(ctx.UserAgent)) { a.Add("--user-agent"); a.Add(ctx.UserAgent!); }
 
         a.Add("--"); // กัน url ที่ขึ้นต้นด้วย - ถูกอ่านเป็นธง
         a.Add(url);

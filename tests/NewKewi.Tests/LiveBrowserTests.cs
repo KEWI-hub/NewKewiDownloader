@@ -48,7 +48,8 @@ public class LiveBrowserTests
 
         try
         {
-            var browser = new ChromiumBrowser(paths);
+            var browser = new ChromiumBrowser(paths, new BrowserIdentity(paths),
+                new BrowserOptions { AdBlockExtensionPath = AdSkipperPath() });
             Assert.True(browser.IsReady, "ควรเจอ chrome.exe ผ่าน junction");
 
             using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
@@ -58,6 +59,13 @@ public class LiveBrowserTests
             Assert.True(page.Html.Length > 2000, $"DOM สั้นผิดปกติ ({page.Html.Length} ตัวอักษร)");
             Assert.NotEmpty(page.Requests);
             Assert.True(File.Exists(paths.CookieJar), "ควรเขียน cookies.txt ของแอปเอง");
+
+            // UA ต้องถูกจำไว้ ไม่งั้น cookie ที่ฝ่าด่านมาได้จะใช้กับ yt-dlp ไม่ได้
+            Assert.Contains("Chrome/", page.UserAgent);
+            Assert.Equal(page.UserAgent, new BrowserIdentity(paths).UserAgent);
+
+            if (AdSkipperPath() is not null)
+                Assert.True(page.AdBlockActive, "เสียบส่วนขยายแล้วแต่มันไม่ได้ทำงานบนหน้าเว็บ");
         }
         finally
         {
@@ -77,6 +85,16 @@ public class LiveBrowserTests
 
         Assert.True(r.Ok, r.Error);
         Assert.Contains(r.Streams, s => s.Url.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// ส่วนขยายกันโฆษณาวางอยู่ข้างๆ repo นี้ (<c>..\video-ad-skipper</c>)
+    /// ไม่มีก็คืน null แล้วเทสจะข้ามการตรวจส่วนนั้นไป
+    /// </summary>
+    private static string? AdSkipperPath()
+    {
+        var sibling = Path.GetFullPath(Path.Combine(RepoPaths().Root, "..", "video-ad-skipper"));
+        return File.Exists(Path.Combine(sibling, "manifest.json")) ? sibling : null;
     }
 
     private static void LinkChromium(string source, string target)
