@@ -74,6 +74,9 @@ public sealed class DownloadItem : INotifyPropertyChanged
     /// <summary>โหลดทับแม้มีไฟล์ชื่อเดียวกันอยู่แล้ว</summary>
     public bool Force { get; set; }
 
+    /// <summary>ความชัดที่ผู้ใช้เลือก (ความสูงของภาพ) · 0 = เอาดีที่สุดที่มี</summary>
+    public int PreferredHeight { get; set; }
+
     [JsonIgnore]
     public bool IsFinished => Status is DownloadStatus.Done or DownloadStatus.Failed or DownloadStatus.Skipped;
 

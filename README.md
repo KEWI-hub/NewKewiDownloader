@@ -4,8 +4,9 @@ A Windows video downloader with an IDM-style interface, per-site Lua config modu
 parallel multi-channel downloads, and a browser extension that puts a download panel
 over any video player.
 
-**Status: phase 2 of 8 — the queue and the download engine work.** Paste links, they download in
-parallel and come out as mp4. Per-site Lua configs and the browser extension are still to come.
+**Status: phase 3 of 8 — per-site Lua configs work.** Paste links, they download in parallel and
+come out as mp4; sites with a Lua module get their real stream resolved first. The portable browser
+and the extension are still to come.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 
 ## Highlights
@@ -78,6 +79,23 @@ dotnet run --project src/NewKewi.App
 ---
 
 ## Changelog
+
+### v0.3.0 — 2026-10-25
+- **Config ต่อเว็บเป็น Lua ใช้งานได้แล้ว** — `SiteRegistry` อ่าน `Register()` ของทุกไฟล์ตอนเปิดแอป
+  แล้วแมปโดเมน → module · โดเมนที่เจาะจงกว่าชนะ · ของใน`modules/local/` ชนะของที่ซิงก์มา
+- **Sandbox ปิดประตูแน่น** — ไม่มี `io` / `os.execute` / `debug` · `require` ออกนอกโฟลเดอร์ module ไม่ได้
+  · `Register()` ยิงเน็ตไม่ได้ · มีเทสยืนยันทุกข้อ
+- **API ให้ module ใช้** — `http` (Get/Post/GetJson/Headers/PostData), `dom` + `Dom.New` (XPath
+  รองรับ `/@attr` ท้ายนิพจน์), `json`, เมธอดสตริง (`:regex` `:contains` `:before` `:afterlast` …),
+  `UnpackJs`, `Base64`, `HexUnescape`, `UrlJoin`, `log`
+- **header 2 ขั้นรองรับตั้งแต่ชั้น config** — `playlistHeaders` / `segmentHeaders` แยกกันได้
+  ตามบทเรียน FirePlayer · ใส่ชุดเดียวแปลว่าใช้ชุดนั้นทั้งสองขั้น
+- **`DownloadEngine` เรียก resolver ให้เอง** — ไม่มี module รับโดเมนนี้ก็ถอยไปทางทั่วไปเงียบๆ
+  · ลิงก์ที่ `expires = true` ถูกขอใหม่ทุกครั้งที่เริ่มโหลด ไม่เก็บไว้ใช้ซ้ำ
+- **module ตัวอย่าง 3 ไฟล์** — `_Example.lua` (เทมเพลตพร้อมคู่มือ), `StreamOrigin.lua`, `TaiAv.lua`
+- `modules/local/` สำหรับ module ที่ผู้ใช้เขียนเอง ไม่ถูกทับตอนซิงก์
+- เอกสารเพิ่มหัวข้อ §11 กฎตั้งชื่อไฟล์ต่อเว็บ สำหรับเว็บที่ไม่มี module (ทำจริงเฟส 7)
+- เทส 73 ข้อผ่านหมด
 
 ### v0.2.0 — 2026-10-24
 - **คิวใช้งานได้จริง** — `DownloadQueue` โหลดหลายลิงก์พร้อมกันตามค่า `MaxParallelDownloads`

@@ -16,7 +16,8 @@ namespace NewKewi.Core.Engine;
 public sealed class DownloadEngine(
     AppPaths paths,
     AppSettings settings,
-    IProcessRunner runner)
+    IProcessRunner runner,
+    IStreamResolver? resolver = null)
 {
     private readonly Remuxer _remuxer = new(paths, runner);
 
@@ -51,6 +52,8 @@ public sealed class DownloadEngine(
         if (string.IsNullOrWhiteSpace(item.OutputDirectory))
             item.OutputDirectory = settings.DownloadDirectory;
         Directory.CreateDirectory(item.OutputDirectory);
+
+        if (!TryResolve(item, ct)) return;
 
         if (ShouldSkip(item))
         {
@@ -120,6 +123,55 @@ public sealed class DownloadEngine(
         item.Status = DownloadStatus.Done;
         item.FinishedAt = DateTimeOffset.Now;
         CleanTemp(tempDir);
+    }
+
+    /// <summary>
+    /// แกะลิงก์ด้วย config ของเว็บ (ถ้ามี) · คืน false แปลว่างานล้มเหลวไปแล้ว
+    ///
+    /// ไม่มี module รับโดเมนนี้ → ปล่อยให้ <c>item.Stream</c> เป็น null
+    /// แล้ว yt-dlp จะได้รับหน้าเว็บไปลองเอง (ทางทั่วไป)
+    /// </summary>
+    private bool TryResolve(DownloadItem item, CancellationToken ct)
+    {
+        if (resolver is null) return true;
+
+        // ลิงก์ที่หมดอายุต้องขอใหม่ทุกครั้งที่เริ่มโหลด ห้ามใช้ของเดิมที่เก็บไว้
+        var needsFreshLink = item.Stream is { Expires: true };
+        if (item.Stream is not null && !needsFreshLink) return true;
+
+        item.Status = DownloadStatus.Resolving;
+        var outcome = resolver.Resolve(item.SourceUrl, ct);
+
+        if (!outcome.Handled) return true;          // ไม่มี config → ทางทั่วไป
+
+        if (outcome.Error is not null)
+        {
+            item.Fail($"config ของเว็บแกะลิงก์ไม่ได้: {outcome.Error}");
+            return false;
+        }
+        if (outcome.Streams.Count == 0)
+        {
+            item.Fail("config ของเว็บรันผ่านแต่ไม่ได้ลิงก์วิดีโอกลับมา");
+            return false;
+        }
+
+        item.ModuleName = outcome.ModuleName;
+        if (string.IsNullOrWhiteSpace(item.Title) && !string.IsNullOrWhiteSpace(outcome.Title))
+            item.Title = outcome.Title!;
+        item.Stream = Pick(outcome.Streams, item.PreferredHeight);
+        return true;
+    }
+
+    /// <summary>เลือกความชัด · ผู้ใช้ระบุมาก็เอาตัวที่ใกล้ที่สุดโดยไม่เกิน ไม่งั้นเอาสูงสุด</summary>
+    internal static MediaStream Pick(IReadOnlyList<MediaStream> streams, int preferredHeight)
+    {
+        if (preferredHeight <= 0) return streams.MaxBy(s => s.Height)!;
+
+        var exact = streams.FirstOrDefault(s => s.Height == preferredHeight);
+        if (exact is not null) return exact;
+
+        var below = streams.Where(s => s.Height > 0 && s.Height <= preferredHeight).MaxBy(s => s.Height);
+        return below ?? streams.MinBy(s => s.Height)!;
     }
 
     private static void ApplyProgress(DownloadItem item, string line)
