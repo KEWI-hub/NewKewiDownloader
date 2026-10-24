@@ -6,8 +6,17 @@ namespace NewKewi.Sites.Browser;
 
 public sealed record BrowserOptions
 {
-    /// <summary>โฟลเดอร์ส่วนขยายกันโฆษณาที่จะเสียบเข้า Chromium · ว่าง = ไม่โหลด</summary>
-    public string? AdBlockExtensionPath { get; init; }
+    /// <summary>
+    /// โฟลเดอร์ส่วนขยายที่จะเสียบเข้า Chromium (ใส่ได้หลายตัว) · ว่าง = ไม่โหลดอะไรเลย
+    /// ปกติคือตัวกันโฆษณา กับส่วนขยายของแอปเองที่แปะปุ่มโหลดเหนือวิดีโอ
+    /// </summary>
+    public IReadOnlyList<string> ExtensionPaths { get; init; } = [];
+
+    /// <summary>ทางลัดสำหรับกรณีมีตัวเดียว</summary>
+    public string? AdBlockExtensionPath
+    {
+        init { if (!string.IsNullOrWhiteSpace(value)) ExtensionPaths = [value]; }
+    }
 
     /// <summary>รอให้ผู้ใช้กดผ่านด่านกันบอทนานสุดกี่วินาที (โหมดมีหน้าต่าง)</summary>
     public int BotWallWaitSeconds { get; init; } = 180;
@@ -35,8 +44,16 @@ public sealed class ChromiumBrowser(
     /// <summary>เรียกเมื่อเปิดหน้าต่างให้ผู้ใช้กดผ่านด่านกันบอท — แอปเอาไปขึ้นข้อความบอก</summary>
     public Action<string>? OnNotice { get; set; }
 
-    public async Task<BrowsePage> OpenAsync(
+    public Task<BrowsePage> OpenAsync(
         string url, BrowseMode mode, int waitSeconds, CancellationToken ct)
+        => OpenAsync(url, mode, waitSeconds, null, ct);
+
+    /// <summary>
+    /// เปิดหน้าเว็บ แล้วรัน JS หนึ่งบรรทัดก่อนปิด (ไม่บังคับ)
+    /// ใช้ไล่ปัญหาว่าส่วนขยายทำงานอยู่บนหน้านั้นจริงไหม
+    /// </summary>
+    public async Task<BrowsePage> OpenAsync(
+        string url, BrowseMode mode, int waitSeconds, string? probe, CancellationToken ct)
     {
         if (!IsReady)
             throw new InvalidOperationException("ยังไม่ได้ติดตั้ง Chromium พกพา");
@@ -82,8 +99,12 @@ public sealed class ChromiumBrowser(
 
             var adBlockActive = await IsAdBlockActiveAsync(cdp, ct).ConfigureAwait(false);
 
+            var probeResult = string.IsNullOrWhiteSpace(probe)
+                ? ""
+                : await EvaluateStringAsync(cdp, probe, ct).ConfigureAwait(false);
+
             return new BrowsePage(html, string.IsNullOrEmpty(finalUrl) ? url : finalUrl,
-                cdp.Snapshot(), ua, adBlockActive);
+                cdp.Snapshot(), ua, adBlockActive, probeResult);
         }
         finally
         {
@@ -156,13 +177,14 @@ public sealed class ChromiumBrowser(
             "--window-size=1280,860",
         ]);
 
-        // ส่วนขยายกันโฆษณา · ทำให้หน้าเว็บที่เต็มไปด้วย popup แกะลิงก์ได้สะอาดกว่ามาก
+        // ส่วนขยาย · ตัวกันโฆษณาทำให้หน้าเว็บที่เต็มไปด้วย popup แกะลิงก์ได้สะอาดกว่ามาก
         // และตอนผู้ใช้ต้องกดผ่านด่านเอง จะได้ไม่มีโฆษณามาเด้งทับ
-        var ext = _options.AdBlockExtensionPath;
-        if (!string.IsNullOrWhiteSpace(ext) && Directory.Exists(ext))
+        var extensions = _options.ExtensionPaths.Where(Directory.Exists).ToList();
+        if (extensions.Count > 0)
         {
-            args.Add("--disable-extensions-except=" + ext);
-            args.Add("--load-extension=" + ext);
+            var joined = string.Join(',', extensions);
+            args.Add("--disable-extensions-except=" + joined);
+            args.Add("--load-extension=" + joined);
         }
 
         args.Add("about:blank");
@@ -249,7 +271,7 @@ public sealed class ChromiumBrowser(
     /// </summary>
     private async Task<bool> IsAdBlockActiveAsync(CdpSession cdp, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(_options.AdBlockExtensionPath)) return false;
+        if (_options.ExtensionPaths.Count == 0) return false;
 
         var answer = await EvaluateStringAsync(cdp,
             "String(Object.getOwnPropertyDescriptor(window, 'open')?.writable === false)", ct)

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Threading;
+using NewKewi.Bridge;
 using NewKewi.Core;
 using NewKewi.Core.Engine;
 using NewKewi.Core.Models;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private readonly ICollectionView _view;
     private readonly DispatcherTimer _tick;
     private readonly TrayIcon _tray;
+    private readonly BridgeServer? _bridge;
 
     public MainWindow()
     {
@@ -56,7 +58,7 @@ public partial class MainWindow : Window
 
         _browser = new ChromiumBrowser(_paths, _identity, new BrowserOptions
         {
-            AdBlockExtensionPath = ResolveAdBlockPath(),
+            ExtensionPaths = ResolveExtensions(),
             BotWallWaitSeconds = _settings.BotWallWaitSeconds,
         })
         {
@@ -89,6 +91,8 @@ public partial class MainWindow : Window
         _tray = new TrayIcon(this, Path.Combine(_paths.Root, "assets", "app.ico"));
         _queue.ItemFinished += OnItemFinished;
 
+        _bridge = StartBridge();
+
         RefreshStatus();
         WarnIfToolsMissing();
     }
@@ -109,18 +113,108 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// หาโฟลเดอร์ส่วนขยายกันโฆษณา
-    /// ตั้งค่าไว้ก็ใช้ตามนั้น · ไม่ได้ตั้งก็มองหา <c>extensions\ad-skipper</c> ข้างตัวแอป
-    /// ไม่เจอก็ไม่เป็นไร แค่ไม่โหลดส่วนขยาย
+    /// เปิดช่องให้ส่วนขยายในเบราว์เซอร์ส่งลิงก์เข้ามา
+    /// เปิดไม่ขึ้น (พอร์ตถูกใช้อยู่) ก็ไม่ทำให้แอปพัง แค่ใช้ส่วนขยายไม่ได้
     /// </summary>
-    private string? ResolveAdBlockPath()
+    private BridgeServer? StartBridge()
     {
-        var configured = _settings.AdBlockExtensionPath;
-        if (!string.IsNullOrWhiteSpace(configured))
-            return Directory.Exists(configured) ? configured : null;
+        try
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            var bridge = new BridgeServer(_paths, $"{version?.Major}.{version?.Minor}.{version?.Build}")
+            {
+                PairRequested = AskUserToPair,
+                LinkReceived = link => Dispatcher.Invoke(() => AcceptLink(link)),
+            };
+            bridge.Start();
+            return bridge;
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"เปิดช่องรับลิงก์จากเบราว์เซอร์ไม่ได้ (พอร์ต {BridgeServer.DefaultPort}): " +
+                              ex.Message.Split('\n')[0];
+            return null;
+        }
+    }
 
-        var beside = Path.Combine(_paths.Root, "extensions", "ad-skipper");
-        return Directory.Exists(beside) ? beside : null;
+    /// <summary>
+    /// ส่วนขยายขอจับคู่ · **ต้องให้ผู้ใช้กดเองเสมอ** ห้ามอนุญาตอัตโนมัติ
+    /// ถูกเรียกจาก thread ของเซิร์ฟเวอร์ จึงต้องเด้งกลับมาถามบน UI thread
+    /// </summary>
+    private bool AskUserToPair(string name)
+    {
+        return Dispatcher.Invoke(() =>
+        {
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Show();
+            Activate();
+
+            var answer = MessageBox.Show(this,
+                $"ส่วนขยายในเบราว์เซอร์ขอเชื่อมต่อกับแอป\n\nชื่อที่แจ้งมา: {name}\n\n" +
+                "อนุญาตเฉพาะตอนที่คุณเพิ่งกดจับคู่ในเบราว์เซอร์เองเท่านั้น",
+                "ขออนุญาตเชื่อมต่อ", MessageBoxButton.YesNo, MessageBoxImage.Question,
+                MessageBoxResult.No);
+
+            return answer == MessageBoxResult.Yes;
+        });
+    }
+
+    /// <summary>ลิงก์ที่ส่วนขยายส่งมา · เข้าคิวแล้วเริ่มโหลดเลย</summary>
+    private void AcceptLink(IncomingLink link)
+    {
+        var item = _queue.Add(link.Url, link.Title ?? "");
+        item.PreferredHeight = link.Height;
+
+        // ส่งลิงก์สตรีมมาตรงๆ ก็ไม่ต้องให้ resolver ไปแกะหน้าเว็บซ้ำ
+        if (!string.IsNullOrEmpty(link.Kind) && link.Kind != "page")
+        {
+            item.Stream = new MediaStream
+            {
+                Url = link.Url,
+                Kind = link.Kind switch
+                {
+                    "hls" => StreamKind.Hls,
+                    "dash" => StreamKind.Dash,
+                    _ => StreamKind.File,
+                },
+                Height = link.Height,
+                Referer = link.Referer,
+            };
+            foreach (var (k, v) in link.Headers) item.Stream.PlaylistHeaders[k] = v;
+        }
+
+        _queue.Save();
+        _queue.Start();
+        RefreshStatus();
+        _tray.Notify("รับลิงก์จากเบราว์เซอร์แล้ว", item.Title.Length > 0 ? item.Title : link.Url);
+    }
+
+    /// <summary>
+    /// ส่วนขยายที่จะเสียบเข้า Chromium พกพา
+    ///
+    /// 1. ตัวของแอปเอง (<c>extension\</c>) — ทำให้เบราว์เซอร์ของแอปมีปุ่มโหลดเหนือวิดีโอด้วย
+    /// 2. ตัวกันโฆษณา — จากที่ตั้งค่าไว้ หรือ <c>extensions\ad-skipper</c> ข้างตัวแอป
+    ///
+    /// ไม่เจอก็ไม่เป็นไร แค่ไม่โหลดตัวนั้น
+    /// </summary>
+    private List<string> ResolveExtensions()
+    {
+        var found = new List<string>();
+
+        void TakeIfValid(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            if (!File.Exists(Path.Combine(path, "manifest.json"))) return;
+            if (!found.Contains(path, StringComparer.OrdinalIgnoreCase)) found.Add(path);
+        }
+
+        TakeIfValid(Path.Combine(_paths.Root, "extension"));
+
+        TakeIfValid(string.IsNullOrWhiteSpace(_settings.AdBlockExtensionPath)
+            ? Path.Combine(_paths.Root, "extensions", "ad-skipper")
+            : _settings.AdBlockExtensionPath);
+
+        return found;
     }
 
     private void WarnIfToolsMissing()
@@ -294,7 +388,8 @@ public partial class MainWindow : Window
         _tick.Stop();
         _queue.Stop();
         _queue.Save();
-        _tray.Dispose();   // ไม่ทำแล้วจะเหลือไอคอนผีค้างในถาดระบบ
+        _bridge?.Dispose();   // ปล่อยพอร์ตคืน ไม่งั้นเปิดแอปใหม่จะรับลิงก์จากเบราว์เซอร์ไม่ได้
+        _tray.Dispose();      // ไม่ทำแล้วจะเหลือไอคอนผีค้างในถาดระบบ
         base.OnClosing(e);
     }
 }

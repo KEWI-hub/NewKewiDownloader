@@ -1,0 +1,11 @@
+/* กฎของตัวครอบแผงเท่านั้น · หน้าตาข้างในอยู่ใน shadow root ที่ CSS ของเว็บเอื้อมไม่ถึง */
+.newkewi-panel-host {
+  position: absolute;
+  z-index: 2147483647;   /* สูงสุดเท่าที่ทำได้ ให้ลอยเหนือ overlay ของเว็บ */
+  display: none;
+  pointer-events: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  line-height: normal;
+}

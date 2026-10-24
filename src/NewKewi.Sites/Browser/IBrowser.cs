@@ -6,7 +6,9 @@ public sealed record BrowsePage(
     IReadOnlyList<CapturedRequest> Requests,
     string UserAgent = "",
     /// <summary>ส่วนขยายกันโฆษณาทำงานอยู่จริงบนหน้านี้ไหม</summary>
-    bool AdBlockActive = false)
+    bool AdBlockActive = false,
+    /// <summary>ผลของ JS ที่สั่งให้รันก่อนปิดหน้า · ใช้ไล่ปัญหา</summary>
+    string ProbeResult = "")
 {
     public static readonly BrowsePage Empty = new("", "", []);
     public bool HasHtml => Html.Length > 0;

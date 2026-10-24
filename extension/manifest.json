@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "New Kewi Downloader",
+  "version": "1.0.0",
+  "description": "เจอวิดีโอบนหน้าเว็บแล้วกดส่งเข้า New Kewi Video Downloader ได้เลย เลือกความชัดได้ด้วย",
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "permissions": [
+    "webRequest",
+    "storage",
+    "tabs"
+  ],
+
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "New Kewi Downloader",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "css": ["panel.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/icon48.png"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}
