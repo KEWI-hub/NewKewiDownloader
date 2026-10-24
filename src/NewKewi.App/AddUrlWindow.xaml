@@ -1,0 +1,29 @@
+<Window x:Class="NewKewi.App.AddUrlWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="เพิ่มลิงก์" Height="320" Width="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        Background="{StaticResource WindowBg}"
+        FontFamily="Segoe UI, Leelawadee UI">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Margin="0,0,0,6"
+                   Text="วางลิงก์ บรรทัดละหนึ่งลิงก์" Foreground="{StaticResource TextDim}" />
+
+        <TextBox x:Name="UrlBox" Grid.Row="1"
+                 AcceptsReturn="True" TextWrapping="NoWrap"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 FontFamily="Consolas" FontSize="13" Padding="6" />
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="ยกเลิก" Width="90" Height="30" Margin="0,0,8,0" IsCancel="True" />
+            <Button Content="เพิ่มเข้าคิว" Width="110" Height="30" IsDefault="True" Click="OnOk"
+                    Background="{StaticResource Accent}" Foreground="White" BorderThickness="0" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -4,7 +4,8 @@ A Windows video downloader with an IDM-style interface, per-site Lua config modu
 parallel multi-channel downloads, and a browser extension that puts a download panel
 over any video player.
 
-**Status: phase 1 of 8 — scaffolding.** The window opens; the download engine is not wired yet.
+**Status: phase 2 of 8 — the queue and the download engine work.** Paste links, they download in
+parallel and come out as mp4. Per-site Lua configs and the browser extension are still to come.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design.
 
 ## Highlights
@@ -77,6 +78,20 @@ dotnet run --project src/NewKewi.App
 ---
 
 ## Changelog
+
+### v0.2.0 — 2026-10-24
+- **คิวใช้งานได้จริง** — `DownloadQueue` โหลดหลายลิงก์พร้อมกันตามค่า `MaxParallelDownloads`
+  เซฟลง `queue.json` **พร้อมสถานะ** งานที่ fail ยังเป็น fail หลังปิดเปิดแอป
+- **ตัวโหลด** — `DownloadEngine.RunAsync()` คือทางเดียวที่งานเดิน ตั้งแต่กวาดซากไฟล์
+  จนถึงทำเป็น mp4 · playlist ใช้ `--concurrent-fragments` ส่วนไฟล์เดี่ยวใช้ aria2c แตกหลายช่อง
+- **ไม่มี retry** — fail แล้วค้างพร้อมเหตุผลภาษาไทย กลับเข้าคิวได้ทางปุ่ม "ลองใหม่" ของผู้ใช้เท่านั้น
+- **ต้องเป็น mp4 เสมอ** — `Remuxer` ลอง copy ก่อน ไม่ผ่านค่อยแปลงเฉพาะเสียง
+  ทางสุดท้ายค่อยแปลงภาพเป็น h264 · **ไม่มีการแปลงเป็น H.265 ทุกกรณี**
+- **`ErrorClassifier`** — ตารางเดียวแปลผลของ yt-dlp เป็นสาเหตุที่คนอ่านรู้เรื่อง
+  แทนการกระจายเงื่อนไขเช็คข้อความอังกฤษไว้ทั่วโค้ด
+- **ความคืบหน้าอ่านจากรูปแบบที่เราสั่งให้พิมพ์เอง** (`--progress-template`) ไม่ parse ข้อความอิสระ
+- UI ต่อกับคิวแล้ว: เพิ่มลิงก์ / เริ่ม / หยุด / ลองใหม่ / ลบ / เปิดโฟลเดอร์ · กรองตามหมวด · แถบคืบหน้าในตาราง
+- เทส 46 ข้อผ่านหมด + เทสยิงเน็ตจริงอีก 2 ข้อ (`Category=live`) โหลด mp4 ตรงและ HLS ได้จริง
 
 ### v0.1.0 — 2026-10-24
 - วางโครง solution: `NewKewi.App` (WPF), `NewKewi.Core`, `NewKewi.Sites`, `NewKewi.Bridge`, `NewKewi.Tests`
