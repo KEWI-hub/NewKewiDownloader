@@ -12,6 +12,9 @@ using NewKewi.Core.Models;
 using NewKewi.Core.Processes;
 using NewKewi.Core.Queue;
 using NewKewi.Core.Settings;
+using NewKewi.Sites;
+using NewKewi.Sites.Browser;
+using WebClient = NewKewi.Sites.WebClient;
 
 namespace NewKewi.App;
 
@@ -19,6 +22,9 @@ public partial class MainWindow : Window
 {
     private readonly AppPaths _paths;
     private readonly AppSettings _settings;
+    private readonly SiteRegistry _registry;
+    private readonly WebClient _web;
+    private readonly ChromiumBrowser _browser;
     private readonly DownloadQueue _queue;
     private readonly ICollectionView _view;
     private readonly DispatcherTimer _tick;
@@ -35,8 +41,19 @@ public partial class MainWindow : Window
         _settings = new SettingsStore(_paths).Load();
         Directory.CreateDirectory(_settings.DownloadDirectory);
 
+        // ชั้นแกะลิงก์: Lua module ของเว็บก่อน ไม่มีค่อยถอยไปอ่านหน้าเว็บเอง
+        _registry = new SiteRegistry(new AppPathsView(_paths.LuaModules, _paths.LocalModules));
+        _registry.Load();
+
+        _web = new WebClient(TimeSpan.FromSeconds(_settings.SocketTimeoutSeconds is > 0 and var t ? t : 30));
+        _browser = new ChromiumBrowser(_paths);
+
+        var resolver = new SiteResolver(
+            new LuaResolver(_registry, _web, _browser),
+            new GenericResolver(new PageFetcher(_web, _browser), _web, _browser));
+
         _queue = new DownloadQueue(_paths, _settings,
-            new DownloadEngine(_paths, _settings, new ProcessRunner()));
+            new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver));
         _queue.Load();
 
         _view = CollectionViewSource.GetDefaultView(_queue.Items);
@@ -71,7 +88,8 @@ public partial class MainWindow : Window
         var speed = items.Sum(i => i.SpeedBytesPerSecond);
 
         StatusText.Text = items.Count == 0
-            ? "คิวว่าง — กด \"เพิ่มลิงก์\" เพื่อเริ่ม"
+            ? $"คิวว่าง — กด \"เพิ่มลิงก์\" เพื่อเริ่ม · มี config ของเว็บ {_registry.Modules.Count} เว็บ" +
+              (_registry.LoadErrors.Count > 0 ? $" ({_registry.LoadErrors.Count} ไฟล์โหลดไม่ขึ้น)" : "")
             : $"ทั้งหมด {items.Count} · กำลังโหลด {active} · รอคิว {queued} · ล้มเหลว {failed}" +
               (speed > 0 ? $" · รวม {ByteSizeConverter.Format(speed)}/s" : "");
 

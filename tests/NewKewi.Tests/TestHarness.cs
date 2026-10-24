@@ -20,6 +20,14 @@ public sealed class FakeProcessRunner : IProcessRunner
     public string? YtDlpStdErr { get; set; }
     public int YtDlpExitCode { get; set; }
 
+    /// <summary>
+    /// ผลของ yt-dlp ทีละครั้งตามลำดับ (null = สำเร็จ) · ว่างไว้ก็ใช้ <see cref="YtDlpStdErr"/> ทุกครั้ง
+    /// ใช้เทสทางถอยกลับ: ครั้งแรกพัง ครั้งที่สองผ่าน
+    /// </summary>
+    public List<string?> YtDlpSequence { get; } = [];
+
+    public int YtDlpCalls { get; private set; }
+
     /// <summary>บรรทัดความคืบหน้าที่จะพ่นออกมาตอนรัน yt-dlp</summary>
     public List<string> ProgressLines { get; } = [];
 
@@ -52,8 +60,13 @@ public sealed class FakeProcessRunner : IProcessRunner
     {
         foreach (var l in ProgressLines) onLine?.Invoke(l);
 
-        if (YtDlpStdErr is not null)
-            return new ProcessResult(YtDlpExitCode == 0 ? 1 : YtDlpExitCode, "", YtDlpStdErr);
+        var stderr = YtDlpSequence.Count > 0
+            ? (YtDlpCalls < YtDlpSequence.Count ? YtDlpSequence[YtDlpCalls] : null)
+            : YtDlpStdErr;
+        YtDlpCalls++;
+
+        if (stderr is not null)
+            return new ProcessResult(YtDlpExitCode == 0 ? 1 : YtDlpExitCode, "", stderr);
 
         if (ProducedFile is not null)
         {

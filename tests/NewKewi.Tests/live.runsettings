@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!--
+      รันเฉพาะเทสที่ยิงเน็ตจริงและเปิด Chromium จริง
+      สั่งด้วย: dotnet test  พร้อมธง settings ชี้มาที่ไฟล์นี้
+
+      ต้องใช้ไฟล์แยก เพราะธง filter ของ dotnet test จะถูก "และ" เข้ากับ TestCaseFilter
+      ใน default.runsettings (Category ไม่เท่ากับ live) แล้วไม่เหลือเทสให้รันเลย
+    -->
+    <TestCaseFilter>Category=live</TestCaseFilter>
+    <TestSessionTimeout>1800000</TestSessionTimeout>
+  </RunConfiguration>
+</RunSettings>

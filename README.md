@@ -34,6 +34,19 @@ dotnet build
 dotnet run --project src/NewKewi.App
 ```
 
+Tests come in two sets. The normal set never touches the network:
+
+```bash
+dotnet test
+```
+
+The live set really downloads files and really launches the portable Chromium, so run it
+deliberately rather than on every change:
+
+```bash
+dotnet test --settings tests/NewKewi.Tests/live.runsettings
+```
+
 ## Layout
 
 | Path | What |
@@ -76,9 +89,38 @@ dotnet build
 dotnet run --project src/NewKewi.App
 ```
 
+เทสมี 2 ชุด · ชุดปกติไม่ยิงเน็ตเลย
+
+```bash
+dotnet test
+```
+
+ชุดของจริงโหลดไฟล์จริงและเปิด Chromium จริง ให้สั่งเองเมื่อต้องการ ไม่ใช่รันทุกครั้งที่แก้โค้ด
+
+```bash
+dotnet test --settings tests/NewKewi.Tests/live.runsettings
+```
+
 ---
 
 ## Changelog
+
+### v0.4.0 — 2026-10-25
+- **ชั้นดึงหน้าเว็บ 3 ชั้น** — `PageFetcher` ไล่จาก HttpClient → Chromium เงียบ → Chromium มีหน้าต่าง
+  ขยับขึ้นชั้นถัดไปเฉพาะตอนเจอด่านกันบอทเท่านั้น หน้าปกติจบที่ชั้นแรกไม่เปลืองเวลาเปิดเบราว์เซอร์
+- **Chromium พกพา** — `ChromiumInstaller` โหลด Chrome for Testing มาไว้ `_chromium/` ตอนต้องใช้ครั้งแรก
+  · `ChromiumBrowser` คุยผ่าน CDP ที่เขียนเอง (`CdpSession`) · profile อยู่ที่ `_profile/` ของแอป
+  **ไม่แตะเบราว์เซอร์หรือ cookie ของผู้ใช้เลย**
+- **cookie ของแอปเอง** — cookie ที่ได้จากเบราว์เซอร์ของแอปถูกเขียนเป็น `data/cookies.txt`
+  แบบ Netscape ให้ yt-dlp ใช้ต่อ ลบทิ้งได้ทั้งก้อน
+- **`GenericResolver`** สำหรับเว็บที่ยังไม่มี module — สแกนหน้า → ตาม iframe ไม่เกิน 3 ชั้น
+  (จำ player ที่ตายแล้ว ไม่ลองซ้ำในรอบเดียว) → เปิดเบราว์เซอร์ดัก request → ยอมแพ้พร้อม**บันทึกทางที่เดินมา**
+- **`MasterPlaylist`** แตก master m3u8 เป็นรายการความชัด ทำให้เลือก 720p ได้แทนที่จะโดนยัดตัวใหญ่สุด
+- **ทางถอยกลับใน engine** — yt-dlp ไปต่อไม่ได้ด้วยเหตุที่ถอยแล้วมีหวัง (ไม่รู้จักเว็บ / กันบอท / ลิงก์หมดอายุ)
+  → อ่านหน้าเว็บเองแล้วยิงใหม่ **ครั้งเดียว** · ยังไม่ใช่ retry และเทสยืนยันว่าเรียก yt-dlp 2 ครั้งพอดี
+- **`browser.GetHtml` / `browser.Capture` ใช้ได้แล้วใน Lua module**
+- แอปต่อ resolver จริงเข้ากับคิวแล้ว
+- เทส 99 ข้อผ่านหมด · เทส live เพิ่มเป็น 5 ข้อ (ติดตั้ง Chromium, เปิดหน้าเว็บจริง, generic resolver)
 
 ### v0.3.0 — 2026-10-25
 - **Config ต่อเว็บเป็น Lua ใช้งานได้แล้ว** — `SiteRegistry` อ่าน `Register()` ของทุกไฟล์ตอนเปิดแอป

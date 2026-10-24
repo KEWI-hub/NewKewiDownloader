@@ -25,7 +25,8 @@ public sealed record ResolveResult(
 /// ลำดับ: หา module ที่รับโดเมนนี้ → ดึงหน้าเว็บหนึ่งครั้ง → รัน Probe/GetInfo/GetStreams
 /// module พังหรือไม่คืนสตรีมเลย = ถือว่าแกะไม่ได้ ไม่มี retry
 /// </summary>
-public sealed class LuaResolver(SiteRegistry registry, IWebClient web) : IStreamResolver
+public sealed class LuaResolver(
+    SiteRegistry registry, IWebClient web, Browser.IBrowser? browser = null) : IStreamResolver
 {
     /// <summary>หน้าตาที่ <see cref="NewKewi.Core.Engine.DownloadEngine"/> เรียกใช้</summary>
     ResolveOutcome IStreamResolver.Resolve(string url, CancellationToken ct)
@@ -64,7 +65,7 @@ public sealed class LuaResolver(SiteRegistry registry, IWebClient web) : IStream
         LuaSandbox box;
         try
         {
-            box = new LuaSandbox(web, registry.ModuleSearchPaths, ct);
+            box = new LuaSandbox(web, registry.ModuleSearchPaths, ct, browser);
             box.LoadFile(info.FilePath);
             box.Call("Register");
             box.SetUrl(url);

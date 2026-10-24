@@ -15,11 +15,14 @@ public sealed class LuaSandbox
 {
     private readonly IWebClient _web;
     private readonly CancellationToken _ct;
+    private readonly Browser.IBrowser? _browser;
 
-    public LuaSandbox(IWebClient web, IEnumerable<string> moduleDirectories, CancellationToken ct)
+    public LuaSandbox(IWebClient web, IEnumerable<string> moduleDirectories, CancellationToken ct,
+        Browser.IBrowser? browser = null)
     {
         _web = web;
         _ct = ct;
+        _browser = browser;
 
         Script = new Script(CoreModules.Preset_SoftSandbox)
         {
@@ -188,15 +191,45 @@ public sealed class LuaSandbox
     }
 
     /// <summary>
-    /// เบราว์เซอร์จริงยังไม่มีในเฟสนี้ (มาเฟส 4)
-    /// โยน error ที่บอกตรงๆ ดีกว่าคืนสตริงว่างแล้วให้ module เดาผิดว่าหน้าเว็บไม่มีอะไร
+    /// เบราว์เซอร์จริง (Chromium พกพา) สำหรับหน้าเว็บที่สร้างเนื้อหาด้วย JS
+    ///
+    /// ยังไม่ได้ติดตั้งหรือไม่ได้ส่งเข้ามา → โยน error ที่บอกตรงๆ
+    /// ดีกว่าคืนสตริงว่างแล้วให้ module เดาผิดว่าหน้าเว็บไม่มีอะไรเลย
     /// </summary>
     private Table BrowserTable()
     {
         var t = new Table(Script);
-        t["GetHtml"] = (Func<string, string>)(_ =>
-            throw new ScriptRuntimeException("browser.GetHtml ยังไม่พร้อมใช้ (มาในเฟส 4 พร้อม Chromium พกพา)"));
+
+        t["IsReady"] = (Func<bool>)(() => _browser?.IsReady ?? false);
+
+        t["GetHtml"] = (Func<string, string>)(u => Open(u).Html);
+
+        // คืนรายการ url ที่หน้าเว็บยิงออกไป · กรองด้วย regex ได้
+        t["Capture"] = (Func<string, string, Table>)((u, pattern) =>
+        {
+            var page = Open(u);
+            var result = new Table(Script);
+            var i = 1;
+            foreach (var r in page.Requests)
+            {
+                if (!string.IsNullOrEmpty(pattern) && TextTools.Match(r.Url, pattern, 0).Length == 0)
+                    continue;
+                result[i++] = r.Url;
+            }
+            return result;
+        });
+
         return t;
+    }
+
+    private Browser.BrowsePage Open(string url)
+    {
+        if (_browser is null || !_browser.IsReady)
+            throw new ScriptRuntimeException(
+                "ยังไม่ได้ติดตั้ง Chromium พกพา — browser.GetHtml ใช้ไม่ได้ตอนนี้");
+
+        return _browser.OpenAsync(url, Browser.BrowseMode.Silent, 25, _ct)
+            .GetAwaiter().GetResult();
     }
 
     private void InstallHelpers(Table g)

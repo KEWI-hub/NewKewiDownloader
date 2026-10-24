@@ -400,6 +400,20 @@ MV3 · อยู่ใน `extension/`
 - เทสห้ามยิงพอร์ตจริง (47800) และห้ามแตะโฟลเดอร์ข้อมูลของผู้ใช้
 - ก่อน commit ทุกครั้ง: `git diff --cached --name-only` แล้วมองหาไฟล์ข้อมูลผู้ใช้
 
+### เทส 2 ชุด
+
+| ชุด | คำสั่ง | ไฟล์ตั้งค่า |
+|---|---|---|
+| ปกติ (ไม่ยิงเน็ต) | `dotnet test` | `default.runsettings` — กรอง `Category != live` |
+| ของจริง (ยิงเน็ต + เปิด Chromium) | `dotnet test --settings tests/NewKewi.Tests/live.runsettings` | `live.runsettings` — กรอง `Category = live` |
+
+**ทำไมต้องมีไฟล์ตั้งค่าแยก 2 ไฟล์:** ธง `--filter` ของ `dotnet test` ถูก **"และ"** เข้ากับ
+`TestCaseFilter` ใน runsettings ไม่ใช่เขียนทับ สั่ง `--filter "Category=live"` เฉยๆ จึงกลายเป็น
+`Category!=live && Category=live` แล้วไม่เหลือเทสให้รันเลย — เสียเวลาไปรอบหนึ่งแล้วตอนทำเฟส 4
+
+> **กับดักของไฟล์ `.runsettings`:** คอมเมนต์ XML ห้ามมี `--` อยู่ข้างใน
+> เขียนชื่อธงบรรทัดคำสั่งลงในคอมเมนต์ตรงๆ แล้วไฟล์จะใช้ไม่ได้ทันที (เจอมาแล้ว 2 ครั้ง)
+
 ---
 
 *ร่างเมื่อ 2026-10-24*

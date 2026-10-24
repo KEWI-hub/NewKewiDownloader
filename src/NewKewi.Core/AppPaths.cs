@@ -32,6 +32,14 @@ public sealed class AppPaths
     public string LuaModules => Path.Combine(Root, "modules", "lua");
     public string LocalModules => Path.Combine(Root, "modules", "local");
 
+    /// <summary>Chromium พกพา — โหลดมาเองตอนต้องใช้ ไม่พึ่งเบราว์เซอร์ที่ติดตั้งในเครื่อง</summary>
+    public string Chromium => Path.Combine(Root, "_chromium");
+
+    public string ChromeExe => Path.Combine(Chromium, "chrome-win64", "chrome.exe");
+
+    /// <summary>profile ของเบราว์เซอร์แอป · แยกจากของผู้ใช้ 100% ลบทิ้งได้ทั้งก้อน</summary>
+    public string BrowserProfile => Path.Combine(Root, "_profile");
+
     public string YtDlp => Path.Combine(Bin, "yt-dlp.exe");
     public string FFmpeg => Path.Combine(Bin, "ffmpeg.exe");
     public string FFprobe => Path.Combine(Bin, "ffprobe.exe");

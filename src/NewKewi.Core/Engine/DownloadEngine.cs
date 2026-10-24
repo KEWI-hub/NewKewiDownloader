@@ -78,18 +78,44 @@ public sealed class DownloadEngine(
             paths, settings, tempDir, resultPathFile,
             File.Exists(paths.CookieJar) ? paths.CookieJar : null);
 
-        var args = YtDlpArgs.Build(item, ctx);
-
-        var result = await runner.RunAsync(
-            new ProcessRequest(paths.YtDlp, args, paths.Bin),
-            line => ApplyProgress(item, line),
-            ct).ConfigureAwait(false);
+        var result = await RunYtDlpAsync(item, ctx, ct).ConfigureAwait(false);
 
         if (!result.Ok)
         {
             var failure = ErrorClassifier.Classify(result.StdErr, result.StdOut, result.ExitCode);
-            item.Fail(failure.Message);
-            return;
+
+            // ถอยมาอ่านหน้าเว็บเอง · ทำได้ครั้งเดียวและเฉพาะตอนยังไม่เคยแกะลิงก์มาก่อน
+            // ไม่ใช่ retry — เป็นขั้นถัดไปของความพยายามเดียวกัน
+            if (!failure.WorthFallingBack || item.Stream is not null || resolver is null)
+            {
+                item.Fail(failure.Message);
+                return;
+            }
+
+            item.Status = DownloadStatus.Resolving;
+            var fallback = resolver.ResolveFallback(item.SourceUrl, ct);
+            if (!fallback.Ok)
+            {
+                item.Fail(fallback.Error ?? failure.Message);
+                return;
+            }
+
+            item.ModuleName = fallback.ModuleName;
+            if (string.IsNullOrWhiteSpace(item.Title) && !string.IsNullOrWhiteSpace(fallback.Title))
+                item.Title = fallback.Title!;
+            item.Stream = Pick(fallback.Streams, item.PreferredHeight);
+
+            SweepLeftovers(tempDir);
+            TryDelete(resultPathFile);
+            item.Status = DownloadStatus.Downloading;
+
+            result = await RunYtDlpAsync(item, ctx, ct).ConfigureAwait(false);
+            if (!result.Ok)
+            {
+                item.Fail(ErrorClassifier
+                    .Classify(result.StdErr, result.StdOut, result.ExitCode).Message);
+                return;
+            }
         }
 
         var file = ReadResultPath(resultPathFile);
@@ -173,6 +199,13 @@ public sealed class DownloadEngine(
         var below = streams.Where(s => s.Height > 0 && s.Height <= preferredHeight).MaxBy(s => s.Height);
         return below ?? streams.MinBy(s => s.Height)!;
     }
+
+    private Task<ProcessResult> RunYtDlpAsync(
+        DownloadItem item, YtDlpArgs.Context ctx, CancellationToken ct)
+        => runner.RunAsync(
+            new ProcessRequest(paths.YtDlp, YtDlpArgs.Build(item, ctx), paths.Bin),
+            line => ApplyProgress(item, line),
+            ct);
 
     private static void ApplyProgress(DownloadItem item, string line)
     {

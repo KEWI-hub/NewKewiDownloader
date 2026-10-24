@@ -22,5 +22,14 @@ public sealed record ResolveOutcome(
 /// </summary>
 public interface IStreamResolver
 {
+    /// <summary>แกะด้วย config ของเว็บ · เรียกก่อนส่งงานให้ yt-dlp</summary>
     ResolveOutcome Resolve(string url, CancellationToken ct);
+
+    /// <summary>
+    /// ทางสำรองเมื่อ yt-dlp เองไปต่อไม่ได้ — อ่านหน้าเว็บเอง
+    ///
+    /// นี่**ไม่ใช่ retry** แต่เป็นขั้นถัดไปของความพยายามเดียวกัน ตามลำดับในเอกสาร §4:
+    /// ยิง yt-dlp ก่อนเพราะเว็บส่วนใหญ่มันจัดการได้ดีกว่า ค่อยถอยมาอ่านเองเมื่อไม่ไหว
+    /// </summary>
+    ResolveOutcome ResolveFallback(string url, CancellationToken ct) => ResolveOutcome.NotHandled;
 }
