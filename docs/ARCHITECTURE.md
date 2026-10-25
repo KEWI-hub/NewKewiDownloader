@@ -495,7 +495,42 @@ MV3 · อยู่ใน `extension/`
 **ข้อจำกัดที่ต้องบอกตรงๆ:** คลิปที่ถูกคุ้มครองด้วย DRM (Widevine/PlayReady) โหลดไม่ได้
 ไม่ว่าจะเขียน config ยังไง — แอปควรตรวจเจอแล้วบอกไปตรงๆ ไม่ใช่ปล่อยให้ผู้ใช้รอแล้วล้มเหลวงงๆ
 
-## 12. กฎการเทส (บทเรียนที่แพงที่สุด)
+## 12. ออกเวอร์ชัน
+
+ทุกอย่างทำโดย GitHub Actions · คนทำแค่ 3 อย่าง
+
+```bash
+# 1. แก้ <Version> ใน src/NewKewi.App/NewKewi.App.csproj ให้ตรงกับ tag ที่จะ push
+# 2. อัป changelog ใน README.md
+# 3. tag แล้ว push
+git tag v0.8.0 && git push origin v0.8.0
+```
+
+| workflow | เมื่อไหร่ | ทำอะไร |
+|---|---|---|
+| `ci.yml` | push / PR เข้า main | build + เทสชุดปกติ + ตรวจว่า module ทุกไฟล์โหลดขึ้น |
+| `release.yml` | push tag `v*` | เทส → publish exe → ประกอบ zip → สร้าง release |
+
+**ตัวกันเวอร์ชันเพี้ยน:** `release.yml` อ่าน `<Version>` ใน csproj มาเทียบกับ tag
+ไม่ตรงกันคือหยุดทันที · ปล่อยให้เพี้ยนแล้วจะได้ exe ที่หัวหน้าต่างบอกเวอร์ชันผิด
+ซึ่งเวลาผู้ใช้แจ้งปัญหาจะไล่ไม่ถูกว่าเขาใช้ตัวไหนอยู่
+
+### ของที่แนบไปกับ release
+
+| ไฟล์ | เนื้อใน |
+|---|---|
+| `NewKewiDownloader-vX.Y.Z-win-x64.zip` | **ตัวที่คนทั่วไปควรโหลด** · exe + `bin/` + `modules/` + `extension/` + `START-HERE.txt` |
+| `NewKewiDownloader.exe` | เฉพาะตัวแอป สำหรับคนที่มี `bin/` อยู่แล้ว |
+
+exe เป็น **self-contained single file** (~67 MB) ผู้ใช้ไม่ต้องติดตั้ง .NET แยก
+
+`bin/` (yt-dlp · ffmpeg · ffprobe · aria2c) **ไม่ได้อยู่ใน repo** เพราะใหญ่เกินไป
+workflow โหลดจากต้นทางทางการตอน build แล้วใส่ลง zip ให้
+
+> **ยังไม่ได้ทำ:** ให้แอปโหลดเครื่องมือใน `bin/` มาเองตอนใช้ครั้งแรก เหมือนที่ทำกับ Chromium
+> ถ้าทำแล้ว zip จะเล็กลงเหลือไม่กี่ MB และอัปเดต yt-dlp ได้โดยไม่ต้องออก release ใหม่
+
+## 13. กฎการเทส (บทเรียนที่แพงที่สุด)
 
 > v1.6.1 เทส 23 ข้อผ่านหมด แต่ของจริงพัง เพราะเทสเรียกตัวแกะลิงก์ตรงๆ
 > ส่วน `_download_job` ไม่เคยเดินทางนั้นเลย
@@ -509,7 +544,7 @@ MV3 · อยู่ใน `extension/`
 
 ```bash
 git diff --cached --name-only |
-  grep -vE "^(src/|tests/|docs/|modules/|assets/|extension/|README\.md|\.gitignore|NewKewi\.slnx)"
+  grep -vE "^(src/|tests/|docs/|modules/|assets/|extension/|\.github/|README\.md|\.gitignore|NewKewi\.slnx)"
 ```
 
 ไม่มีอะไรออกมา = ปลอดภัย · มีอะไรออกมา = หยุดแล้วดูให้ดีก่อน

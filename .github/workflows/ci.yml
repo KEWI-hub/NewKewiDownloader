@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # ชุดปกติเท่านั้น · default.runsettings กรอง Category=live ออกให้แล้ว
+      # เทส live เปิด Chromium จริงและยิงเว็บจริง ไม่เหมาะกับ CI
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # module ที่ส่งให้ผู้ใช้ต้องโหลดขึ้นทุกไฟล์ · เทสข้อนี้อ่าน modules/lua ของจริง
+      - name: Check site modules load
+        run: dotnet test --configuration Release --no-build --filter "FullyQualifiedName~RealModuleTests"
