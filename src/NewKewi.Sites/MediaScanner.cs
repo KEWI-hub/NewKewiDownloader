@@ -105,10 +105,32 @@ public static partial class MediaScanner
         RegexOptions.IgnoreCase)]
     private static partial Regex PlaylistRegex();
 
-    /// <summary>รูปแบบ <c>file: "..."</c> / <c>"src":"..."</c> ที่ player อย่าง jwplayer ใช้</summary>
-    [GeneratedRegex(@"(?:""|')?(?:file|src|source|hls|videoSource|play_url)(?:""|')?\s*[:=]\s*[""']([^""']{8,})[""']",
+    /// <summary>
+    /// รูปแบบ <c>file: "..."</c> / <c>"src":"..."</c> ที่ player อย่าง jwplayer ใช้
+    /// รับ <c>hls2</c> <c>hls3</c> <c>hls4</c> ด้วย เพราะ jwplayer บางเจ้าเก็บลิงก์ไว้หลายตัวในชุดเดียว
+    /// </summary>
+    [GeneratedRegex(@"(?:""|')?(?:file|src|source|hls\d*|videoSource|play_url)(?:""|')?\s*[:=]\s*[""']([^""']{8,})[""']",
         RegexOptions.IgnoreCase)]
     private static partial Regex FileFieldRegex();
+
+    /// <summary>
+    /// หน้า player บางเจ้าเป็นแค่ตัวส่งต่อ: <c>&lt;script&gt;location.replace("หน้าจริง")&lt;/script&gt;</c>
+    /// ไม่ตามไปก็จบแค่หน้าเปล่า
+    /// </summary>
+    public static string? FindRedirect(string html, string baseUrl)
+    {
+        if (string.IsNullOrEmpty(html)) return null;
+
+        var m = RedirectRegex().Match(html);
+        if (!m.Success) return null;
+
+        var target = Lua.LuaSandbox.UrlJoin(baseUrl, m.Groups[1].Value.Trim());
+        return target.Equals(baseUrl, StringComparison.OrdinalIgnoreCase) ? null : target;
+    }
+
+    [GeneratedRegex(@"location\s*(?:\.\s*(?:replace|assign)\s*\(|\.\s*href\s*=)\s*[""']([^""']{4,})[""']",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex RedirectRegex();
 
     [GeneratedRegex(@"https?://[^\s""'<>\\)]+\.(?:mp4|webm|mkv|mov)(?:\?[^\s""'<>\\)]*)?",
         RegexOptions.IgnoreCase)]

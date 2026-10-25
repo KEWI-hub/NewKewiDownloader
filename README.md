@@ -4,7 +4,7 @@ A Windows video downloader with an IDM-style interface, per-site Lua config modu
 parallel multi-channel downloads, and a browser extension that puts a download panel
 over any video player.
 
-**Status: phase 5 of 8 — usable.** Paste links and they download in parallel as mp4, per-site Lua
+**Status: phase 8 of 8 — feature complete.** Paste links and they download in parallel as mp4, per-site Lua
 configs resolve the real stream, the portable Chromium gets past bot walls with one click from you,
 and the interface has the queue, a per-job detail window, settings and a tray icon. The browser
 extension that puts a download button over a video player is still to come.
@@ -115,6 +115,23 @@ dotnet test --settings tests/NewKewi.Tests/live.runsettings
 ---
 
 ## Changelog
+
+### v0.8.0 — 2026-10-25
+- **ย้าย module เว็บที่เหลือจาก YtdlpGUI มาครบ** — `FirePlayer` (av-th.io/.net/.xyz),
+  `SupJav`, `Av123` · รวมเป็น 5 module ครอบ 8 โดเมน + ไฟล์ฐานร่วม `_Players.lua`
+- **`LocalPlaylistWriter`** — ชั้นที่ขาดไปตั้งแต่เฟส 3 · ดึง HLS playlist มาเขียนลงเครื่อง
+  แล้วชี้ไฟล์ย่อยเป็น URL เต็ม ทำให้เคส FirePlayer (playlist ต้องมี `Origin` แต่ไฟล์ย่อยห้ามมี)
+  ใช้งานได้จริง ไม่ใช่แค่รองรับในแบบ
+- **`require` ของ sandbox เขียนเอง** — ไม่เปิด `LoadMethods` ของ MoonSharp เพราะมันพ่วง
+  `dofile`/`loadfile` ที่อ่านไฟล์ไหนในเครื่องก็ได้ · ตัวใหม่รับเฉพาะชื่อ module เปล่าๆ
+  และหาไฟล์เฉพาะในโฟลเดอร์ module (มีเทสยิง 5 ทางยืนยันว่าปิดหมด)
+- **แก้บั๊ก `json.Decode` พังกับ `\/`** — ตัวแปลงของ MoonSharp ปั้นเป็นโค้ด Lua แล้วแปลซ้ำ
+  `\/` ที่ถูกต้องตามมาตรฐาน JSON จึงกลายเป็น escape ที่ Lua ไม่รู้จัก
+  เว็บวิดีโอหนีสแลชแบบนี้แทบทุกเจ้า ตอนนี้ชั้น host คลายให้ก่อนเสมอ
+- **ตามหน้าที่ส่งต่อด้วย `location.replace` และอ่าน `hls2`/`hls3`/`hls4` ของ jwplayer**
+  ย้ายไปอยู่ในทางทั่วไป เพราะเป็นพฤติกรรมของ player ไม่ใช่ของเว็บใดเว็บหนึ่ง
+- 7mmtv กับ missav **ไม่ต้องมี module** — กลไกของมันคือ "อ่านหน้าเว็บเอง" ซึ่งทางทั่วไปทำอยู่แล้ว
+- เทส 166 ข้อผ่านหมด · เทส live ยืนยันว่าแอปซิงก์ module ทั้ง 6 ไฟล์จาก repo จริงลงมาแล้วโหลดขึ้น
 
 ### v0.7.0 — 2026-10-25
 - **ส่ง log ของเว็บที่โหลดไม่ได้ขึ้น GitHub** — `DiagnosticReport` เก็บแค่โดเมน, path ของหน้า,

@@ -16,6 +16,7 @@ public sealed class LuaSandbox
     private readonly IWebClient _web;
     private readonly CancellationToken _ct;
     private readonly Browser.IBrowser? _browser;
+    private readonly List<string> _moduleDirectories;
 
     public LuaSandbox(IWebClient web, IEnumerable<string> moduleDirectories, CancellationToken ct,
         Browser.IBrowser? browser = null)
@@ -23,19 +24,12 @@ public sealed class LuaSandbox
         _web = web;
         _ct = ct;
         _browser = browser;
+        _moduleDirectories = moduleDirectories.ToList();
 
-        Script = new Script(CoreModules.Preset_SoftSandbox)
-        {
-            Options =
-            {
-                ScriptLoader = new FileSystemScriptLoader
-                {
-                    ModulePaths = moduleDirectories
-                        .Select(d => Path.Combine(d, "?.lua"))
-                        .ToArray(),
-                },
-            },
-        };
+        // Preset_SoftSandbox ไม่มี io / os.execute / debug และ **ไม่มี LoadMethods**
+        // ที่ตั้งใจไม่เปิด LoadMethods เพราะมันพ่วง dofile/loadfile ซึ่งรับ path ตรงๆ
+        // แล้วอ่านไฟล์ไหนในเครื่องก็ได้ · require ของเราเขียนเองใน InstallRequire แทน
+        Script = new Script(CoreModules.Preset_SoftSandbox);
 
         RequestHeaders = new Table(Script);
         PostData = new Table(Script);
@@ -126,6 +120,52 @@ public sealed class LuaSandbox
 
         InstallHelpers(g);
         InstallStringMethods();
+        InstallRequire(g);
+    }
+
+    /// <summary>
+    /// <c>require</c> ของเราเอง สำหรับให้ module แชร์โค้ดกัน
+    ///
+    /// **ไม่เปิด <c>CoreModules.LoadMethods</c> ของ MoonSharp** เพราะมันพ่วง <c>dofile</c>
+    /// กับ <c>loadfile</c> มาด้วย ซึ่งรับ path ตรงๆ แล้วอ่านไฟล์ไหนในเครื่องก็ได้
+    /// — รูรั่วที่ใหญ่พอๆ กับการเปิด <c>io</c> ทิ้งไว้
+    ///
+    /// ตัวนี้รับได้เฉพาะ**ชื่อ module เปล่าๆ** และหาไฟล์เฉพาะในโฟลเดอร์ module เท่านั้น
+    /// </summary>
+    private void InstallRequire(Table g)
+    {
+        var loaded = new Dictionary<string, DynValue>(StringComparer.OrdinalIgnoreCase);
+        var loading = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        g["require"] = DynValue.NewCallback((_, args) =>
+        {
+            var name = (args.RawGet(0, false)?.CastToString() ?? "").Trim();
+
+            if (name.Length == 0 || !name.All(c => char.IsLetterOrDigit(c) || c is '_' or '-'))
+                throw new ScriptRuntimeException(
+                    $"require รับได้เฉพาะชื่อ module เปล่าๆ (ได้มา: '{name}')");
+
+            if (loaded.TryGetValue(name, out var cached)) return cached;
+
+            if (!loading.Add(name))
+                throw new ScriptRuntimeException($"require วนกลับมาหาตัวเอง: {name}");
+
+            try
+            {
+                var file = _moduleDirectories
+                    .Select(d => Path.Combine(d, name + ".lua"))
+                    .FirstOrDefault(File.Exists)
+                    ?? throw new ScriptRuntimeException($"หาไฟล์ {name}.lua ในโฟลเดอร์ module ไม่เจอ");
+
+                var result = Script.DoString(File.ReadAllText(file), null, name);
+                loaded[name] = result;
+                return result;
+            }
+            finally
+            {
+                loading.Remove(name);
+            }
+        });
     }
 
     /// <summary>รับได้ทั้ง <c>Domains:Add(x)</c> และ <c>Domains.Add(x)</c> เหมือน HDoujinDownloader</summary>
@@ -154,13 +194,7 @@ public sealed class LuaSandbox
         t["GetStatus"] = (Func<string, int>)(u => _web.Get(u, Headers(), _ct).Status);
         t["Post"] = (Func<string, string>)(u => _web.Post(u, Headers(), Form(), _ct).Body);
 
-        t["GetJson"] = (Func<string, DynValue>)(u =>
-        {
-            var body = _web.Get(u, Headers(), _ct).Body;
-            return string.IsNullOrWhiteSpace(body)
-                ? DynValue.Nil
-                : DynValue.NewTable(JsonTableConverter.JsonToTable(body, Script));
-        });
+        t["GetJson"] = (Func<string, DynValue>)(u => DecodeJson(_web.Get(u, Headers(), _ct).Body));
 
         t["Reset"] = (Action)(() =>
         {
@@ -174,12 +208,52 @@ public sealed class LuaSandbox
     private Table JsonTable()
     {
         var t = new Table(Script);
-        t["Decode"] = (Func<string, DynValue>)(s =>
-            string.IsNullOrWhiteSpace(s) ? DynValue.Nil
-                                         : DynValue.NewTable(JsonTableConverter.JsonToTable(s, Script)));
+        t["Decode"] = (Func<string, DynValue>)DecodeJson;
         t["Encode"] = (Func<DynValue, string>)(v =>
             v.Type == DataType.Table ? JsonTableConverter.TableToJson(v.Table) : "null");
         return t;
+    }
+
+    /// <summary>
+    /// แปลง JSON เป็นตาราง Lua
+    ///
+    /// **ต้องคลาย <c>\/</c> ก่อน** — ตัวแปลงของ MoonSharp ทำงานโดยปั้นเป็นโค้ด Lua แล้วแปลซ้ำ
+    /// ซึ่ง <c>\/</c> ที่ถูกต้องตามมาตรฐาน JSON กลายเป็น escape ที่ Lua ไม่รู้จัก
+    /// แล้วพังด้วยข้อความ "invalid escape sequence near '\/'"
+    ///
+    /// เว็บวิดีโอหนีสแลชแบบนี้แทบทุกเจ้า (เช่น <c>"videoSource":"https:\/\/cdn\/x"</c>)
+    /// ถ้าไม่คลายให้ที่ชั้นนี้ ทุก module ต้องไปคลายเองซึ่งลืมง่ายมาก
+    /// </summary>
+    private DynValue DecodeJson(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return DynValue.Nil;
+
+        try
+        {
+            return DynValue.NewTable(JsonTableConverter.JsonToTable(Unescape(body), Script));
+        }
+        catch (Exception ex) when (ex is SyntaxErrorException or InvalidCastException or FormatException)
+        {
+            Log.Add("WARN  อ่าน JSON ไม่ออก: " + ex.Message.Split('\n')[0]);
+            return DynValue.Nil;
+        }
+
+        // คลายเฉพาะ \/ ที่ตัวแบ็กสแลชไม่ได้ถูก escape ไว้เอง
+        // (\\/ คือแบ็กสแลชจริงตามด้วยสแลช ห้ามแตะ)
+        static string Unescape(string json)
+        {
+            if (!json.Contains("\\/", StringComparison.Ordinal)) return json;
+
+            var sb = new System.Text.StringBuilder(json.Length);
+            for (var i = 0; i < json.Length; i++)
+            {
+                if (json[i] != '\\' || i + 1 >= json.Length) { sb.Append(json[i]); continue; }
+
+                if (json[i + 1] == '/') { sb.Append('/'); i++; }
+                else { sb.Append(json[i]).Append(json[i + 1]); i++; }   // \\ หรือ escape อื่น ปล่อยคู่ไป
+            }
+            return sb.ToString();
+        }
     }
 
     private Table LogTable()

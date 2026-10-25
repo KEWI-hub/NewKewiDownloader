@@ -34,4 +34,15 @@ public interface IStreamResolver
     /// ยิง yt-dlp ก่อนเพราะเว็บส่วนใหญ่มันจัดการได้ดีกว่า ค่อยถอยมาอ่านเองเมื่อไม่ไหว
     /// </summary>
     ResolveOutcome ResolveFallback(string url, CancellationToken ct) => ResolveOutcome.NotHandled;
+
+    /// <summary>
+    /// เตรียมสตรีมให้พร้อมส่งให้ yt-dlp (เรียกตอนจะโหลดจริงเท่านั้น)
+    ///
+    /// ใช้กับกรณีที่ playlist กับไฟล์ย่อยต้องใช้ header คนละชุด: yt-dlp ส่ง header ชุดเดียว
+    /// ทั้งงาน จึงไม่มีทางผ่านทั้งสองขั้น ต้องดึง playlist มาเขียนลงเครื่องก่อน
+    /// แล้วส่งเป็น <c>file://</c> ให้แทน
+    ///
+    /// คืนสตรีมเดิมถ้าไม่ต้องเตรียมอะไร
+    /// </summary>
+    MediaStream Prepare(MediaStream stream, string workDir, CancellationToken ct) => stream;
 }

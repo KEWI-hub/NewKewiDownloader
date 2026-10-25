@@ -74,6 +74,11 @@ public sealed class DownloadEngine(
         var resultPathFile = Path.Combine(tempDir, "result-path.txt");
         TryDelete(resultPathFile);
 
+        // playlist กับไฟล์ย่อยต้องใช้ header คนละชุด → ดึง playlist มาเขียนลงเครื่องก่อน
+        // ต้องทำตรงนี้ ไม่ใช่ตอนเข้าคิว เพราะลิงก์ของเว็บพวกนี้มีอายุสั้น
+        if (resolver is not null && item.Stream is { NeedsSplitHeaders: true } split)
+            item.Stream = resolver.Prepare(split, tempDir, ct);
+
         item.Status = DownloadStatus.Downloading;
         item.Progress = 0;
         item.FailureReason = null;

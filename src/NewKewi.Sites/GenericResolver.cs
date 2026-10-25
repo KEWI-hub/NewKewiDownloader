@@ -83,6 +83,19 @@ public sealed class GenericResolver(
         }
         if (depth >= MaxFrameDepth) return found;
 
+        // หน้า player บางเจ้าเป็นแค่ตัวส่งต่อด้วย location.replace ไม่ตามไปก็จบแค่หน้าเปล่า
+        if (MediaScanner.FindRedirect(html, baseUrl) is { } redirect && visited.Add(redirect))
+        {
+            var hop = fetcher.Simple(redirect, ct);
+            trail.Add($"redirect depth={depth + 1} status={hop.Status} {Host(redirect)}");
+            if (hop.HasHtml)
+            {
+                var after = await HuntAsync(hop.Html, hop.FinalUrl, depth + 1, visited, trail, ct)
+                    .ConfigureAwait(false);
+                if (after.Count > 0) return after;
+            }
+        }
+
         foreach (var frame in MediaScanner.FindFrames(html, baseUrl))
         {
             ct.ThrowIfCancellationRequested();

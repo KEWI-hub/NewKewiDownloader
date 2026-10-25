@@ -41,16 +41,30 @@ public class LiveGitHubTests
             var first = await sync.SyncAsync(cts.Token);
 
             Assert.True(first.Changed, first.Message);
-            Assert.True(first.FilesWritten >= 2, $"ได้มาแค่ {first.FilesWritten} ไฟล์");
-            Assert.True(File.Exists(Path.Combine(paths.LuaModules, "StreamOrigin.lua")));
-            Assert.True(File.Exists(Path.Combine(paths.LuaModules, "TaiAv.lua")));
+
+            // ไฟล์ฐานร่วมที่ชื่อขึ้นต้นด้วย _ ต้องมาด้วย ไม่งั้น module ที่ require มันจะโหลดไม่ขึ้น
+            foreach (var file in new[]
+                     { "StreamOrigin.lua", "TaiAv.lua", "FirePlayer.lua", "SupJav.lua", "Av123.lua", "_Players.lua" })
+            {
+                Assert.True(File.Exists(Path.Combine(paths.LuaModules, file)), $"ไม่ได้ {file} มา");
+            }
 
             // module ที่ซิงก์มาต้องโหลดเข้า registry ได้จริง ไม่ใช่แค่ไฟล์มาถึง
             var registry = new SiteRegistry(new AppPathsView(paths.LuaModules, paths.LocalModules));
             registry.Load();
-            Assert.True(registry.Modules.Count >= 2,
-                "โหลด module ที่ซิงก์มาไม่ขึ้น: " + string.Join(" · ", registry.LoadErrors.Select(e => e.Error)));
-            Assert.NotNull(registry.Find("https://taiav.com/cn/movie/x"));
+            Assert.Empty(registry.LoadErrors.Select(e => $"{Path.GetFileName(e.File)}: {e.Error}"));
+
+            foreach (var (site, expected) in new[]
+                     {
+                         ("https://taiav.com/cn/movie/x", "TaiAv"),
+                         ("https://av-th.io/video/1", "FirePlayer"),
+                         ("https://supjav.com/x", "SupJav"),
+                         ("https://123av.com/x", "Av123"),
+                         ("https://pornavhd.com/x", "StreamOrigin"),
+                     })
+            {
+                Assert.Equal(expected, registry.Find(site)?.Name);
+            }
 
             // รอบสองต้องรู้ว่าเหมือนเดิมแล้วไม่โหลดซ้ำ
             var second = await sync.SyncAsync(cts.Token);

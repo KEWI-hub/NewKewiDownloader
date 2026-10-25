@@ -76,7 +76,8 @@ public partial class MainWindow : Window
             AllowInteractiveBotWall = _settings.AllowInteractiveBotWall,
         };
 
-        var resolver = new SiteResolver(new LuaResolver(_registry, _web, _browser), generic);
+        var resolver = new SiteResolver(
+            new LuaResolver(_registry, _web, _browser), generic, new LocalPlaylistWriter(_web));
 
         _queue = new DownloadQueue(_paths, _settings,
             new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver, _identity, _naming));

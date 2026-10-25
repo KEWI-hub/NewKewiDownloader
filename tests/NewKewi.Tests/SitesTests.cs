@@ -205,6 +205,92 @@ public class LuaSandboxTests
         Assert.NotNull(r.Error);   // io เป็น nil → เรียกแล้วพัง ซึ่งคือสิ่งที่ต้องการ
     }
 
+    [Theory]
+    [InlineData("dofile('C:/Windows/win.ini')")]
+    [InlineData("loadfile('C:/Windows/win.ini')")]
+    [InlineData("require('../../../ไฟล์ข้างนอก')")]
+    [InlineData("require('C:/Windows/win')")]
+    [InlineData("require('a/b')")]
+    public void ทางอ่านไฟล์นอกโฟลเดอร์_module_ถูกปิดหมด(string attempt)
+    {
+        var web = new FakeWebClient();
+        var r = Run($$"""
+            function Register()
+                module.Name='T' module.Domains:Add('example.com')
+            end
+            function GetStreams()
+                {{attempt}}
+            end
+            """, "https://example.com/x", web);
+
+        Assert.True(r.Handled);
+        Assert.NotNull(r.Error);
+    }
+
+    [Fact]
+    public void require_โหลดไฟล์ฐานร่วมในโฟลเดอร์เดียวกันได้()
+    {
+        using var m = new TempModules();
+        m.Write("_Shared.lua", "local M = {} function M.greet() return 'สวัสดี' end return M");
+        m.Write("T.lua", """
+            local shared = require '_Shared'
+            function Register()
+                module.Name='T' module.Domains:Add('example.com')
+            end
+            function GetStreams()
+                streams.Add{ url = 'https://cdn/x.m3u8', label = shared.greet() }
+            end
+            """);
+
+        var web = new FakeWebClient();
+        web.Pages["https://example.com/x"] = "";
+        var r = new LuaResolver(m.Loaded(), web).Resolve("https://example.com/x", CancellationToken.None);
+
+        Assert.True(r.Streams.Count == 1, "error=" + r.Error);
+        Assert.Equal("สวัสดี", r.Streams[0].Label);
+    }
+
+    [Fact]
+    public void json_ที่หนีสแลชแบบ_backslash_slash_อ่านได้()
+    {
+        var web = new FakeWebClient();
+        web.Pages["https://api.example/x"] = """{"videoSource":"https:\/\/cdn.example\/a\/master.m3u8"}""";
+
+        var r = Run("""
+            function Register()
+                module.Name='T' module.Domains:Add('example.com')
+            end
+            function GetStreams()
+                local data = http.GetJson('https://api.example/x')
+                if data == nil then return end
+                streams.Add{ url = data.videoSource, kind = 'hls' }
+            end
+            """, "https://example.com/x", web);
+
+        Assert.True(r.Streams.Count == 1, "error=" + r.Error);
+        Assert.Equal("https://cdn.example/a/master.m3u8", r.Streams[0].Url);
+    }
+
+    [Fact]
+    public void json_ที่อ่านไม่ออกคืน_nil_ไม่ใช่ทำให้_module_ล้ม()
+    {
+        var web = new FakeWebClient();
+        web.Pages["https://api.example/x"] = "{ นี่ไม่ใช่ json";
+
+        var r = Run("""
+            function Register()
+                module.Name='T' module.Domains:Add('example.com')
+            end
+            function GetStreams()
+                local data = http.GetJson('https://api.example/x')
+                streams.Add{ url = 'https://cdn/x.m3u8', label = (data == nil) and 'nil' or 'มีค่า' }
+            end
+            """, "https://example.com/x", web);
+
+        Assert.True(r.Streams.Count == 1, "error=" + r.Error);
+        Assert.Equal("nil", r.Streams[0].Label);
+    }
+
     [Fact]
     public void เมธอดของสตริงใช้ได้ครบ()
     {
