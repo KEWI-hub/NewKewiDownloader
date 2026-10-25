@@ -13,7 +13,8 @@ namespace NewKewi.Sites;
 ///   4. ยังไม่เจอ → เปิดเบราว์เซอร์จริงแล้วดัก request ที่ JS ยิงออกมา
 ///   5. ยังไม่เจอ → ยอมแพ้พร้อมบันทึกว่าเดินไปถึงไหนแล้ว (เอาไปทำ config ต่อ)
 /// </summary>
-public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowser browser)
+public sealed class GenericResolver(
+    PageFetcher fetcher, IWebClient web, IBrowser browser, NewKewi.Core.NamingRules? naming = null)
 {
     private const int MaxFrameDepth = 3;
 
@@ -42,7 +43,7 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
                 : "เว็บกันบอทอยู่ ต้องเปิดผ่านเบราว์เซอร์แล้วกดยืนยันก่อน", trail);
         }
 
-        var title = ExtractTitle(page.Html);
+        var title = ExtractTitle(page.Html, url);
 
         var media = await HuntAsync(page.Html, page.FinalUrl, 0, visited, trail, ct).ConfigureAwait(false);
 
@@ -52,7 +53,7 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
             var live = await fetcher.BrowserAsync(url, BrowseMode.Silent, 25, ct).ConfigureAwait(false);
             trail.Add($"browser:silent bytes={live.Html.Length} requests={live.Requests.Count}");
 
-            if (string.IsNullOrEmpty(title)) title = ExtractTitle(live.Html);
+            if (string.IsNullOrEmpty(title)) title = ExtractTitle(live.Html, url);
             media = await HuntAsync(live.Html, live.FinalUrl, 0, visited, trail, ct).ConfigureAwait(false);
 
             if (media.Count == 0) media = FromCapturedRequests(live.Requests, trail);
@@ -153,16 +154,30 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
             .ToList();
     }
 
-    private static string? ExtractTitle(string html)
+    /// <summary>
+    /// หาชื่อคลิป · กฎตั้งชื่อของเว็บนั้นระบุ XPath ไว้ก็ใช้อันนั้นก่อน
+    /// แล้วค่อยไล่ลงมาที่ og:title → h1 → title ของหน้า
+    /// </summary>
+    private string? ExtractTitle(string html, string pageUrl)
     {
         if (string.IsNullOrEmpty(html)) return null;
+
         var dom = new HtmlAgilityPack.HtmlDocument();
         dom.LoadHtml(html);
 
-        var title = dom.DocumentNode.SelectSingleNode("//meta[@property='og:title']/@content") is not null
-            ? dom.DocumentNode.SelectSingleNode("//meta[@property='og:title']")?.GetAttributeValue("content", "")
-            : null;
+        string? title = null;
 
+        var host = Uri.TryCreate(pageUrl, UriKind.Absolute, out var uri) ? uri.Host : "";
+        var fromRule = naming?.Match(host).TitleFrom;
+        if (!string.IsNullOrWhiteSpace(fromRule))
+        {
+            try { title = dom.DocumentNode.SelectSingleNode(fromRule)?.InnerText; }
+            catch (System.Xml.XPath.XPathException) { /* XPath ที่ผู้ใช้เขียนผิด */ }
+        }
+
+        if (string.IsNullOrWhiteSpace(title))
+            title = dom.DocumentNode.SelectSingleNode("//meta[@property='og:title']")
+                ?.GetAttributeValue("content", "");
         if (string.IsNullOrWhiteSpace(title))
             title = dom.DocumentNode.SelectSingleNode("//h1")?.InnerText;
         if (string.IsNullOrWhiteSpace(title))
@@ -172,9 +187,13 @@ public sealed class GenericResolver(PageFetcher fetcher, IWebClient web, IBrowse
         return title.Length == 0 ? null : title;
     }
 
-    /// <summary>เก็บร่องรอยไว้ด้วย — เป็นวัตถุดิบของ diagnostic bundle ในเฟส 7</summary>
+    /// <summary>
+    /// ล้มเหลวพร้อมร่องรอยที่เดินมา
+    /// ร่องรอยแยกไว้ต่างหากจากข้อความ ไม่ได้ต่อท้ายเป็นสตริงยาวๆ
+    /// เพราะมันเป็นวัตถุดิบของ diagnostic bundle ที่ต้องคัดกรองก่อนส่งขึ้น GitHub
+    /// </summary>
     private static ResolveOutcome Failed(string message, List<string> trail)
-        => new(true, "Generic", null, [], message + " · ทางที่เดินมา: " + string.Join(" → ", trail));
+        => new(true, "Generic", null, [], message, trail);
 
     private static string Host(string url)
         => Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host : url;

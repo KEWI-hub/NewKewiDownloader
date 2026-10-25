@@ -6,7 +6,9 @@ public sealed record ResolveOutcome(
     string? ModuleName,
     string? Title,
     IReadOnlyList<MediaStream> Streams,
-    string? Error)
+    string? Error,
+    /// <summary>ทางที่ตัวแกะลิงก์เดินมา · เป็นวัตถุดิบของ diagnostic bundle ตอนล้มเหลว</summary>
+    IReadOnlyList<string>? Trail = null)
 {
     /// <summary>ไม่มี config ของเว็บนี้ — ให้ไปทางทั่วไป</summary>
     public static readonly ResolveOutcome NotHandled = new(false, null, null, [], null);

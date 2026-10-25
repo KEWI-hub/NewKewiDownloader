@@ -236,7 +236,11 @@ public class GenericResolverTests
         Assert.True(r.Handled);
         Assert.False(r.Ok);
         Assert.Contains("ต้องเขียน config", r.Error);
-        Assert.Contains("ทางที่เดินมา", r.Error);
+
+        // ร่องรอยแยกไว้ต่างหาก ไม่ได้ต่อท้ายข้อความ เพราะต้องเอาไปคัดกรองก่อนส่งขึ้น GitHub
+        Assert.NotNull(r.Trail);
+        Assert.NotEmpty(r.Trail);
+        Assert.Contains(r.Trail, t => t.StartsWith("fetch:"));
     }
 
     [Fact]

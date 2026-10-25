@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using NewKewi.Bridge;
 using NewKewi.Core;
 using NewKewi.Core.Engine;
+using NewKewi.Core.GitHub;
 using NewKewi.Core.Models;
 using NewKewi.Core.Processes;
 using NewKewi.Core.Queue;
@@ -32,6 +33,9 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _tick;
     private readonly TrayIcon _tray;
     private readonly BridgeServer? _bridge;
+    private readonly NamingRules _naming;
+    private readonly GitHubClient _github = new();
+    private readonly DiagnosticReporter _reporter;
 
     public MainWindow()
     {
@@ -65,7 +69,9 @@ public partial class MainWindow : Window
             OnNotice = message => Dispatcher.Invoke(() => StatusText.Text = message),
         };
 
-        var generic = new GenericResolver(new PageFetcher(_web, _browser), _web, _browser)
+        _naming = NamingRules.Load(Path.Combine(_paths.Root, "modules", "naming.json"));
+
+        var generic = new GenericResolver(new PageFetcher(_web, _browser), _web, _browser, _naming)
         {
             AllowInteractiveBotWall = _settings.AllowInteractiveBotWall,
         };
@@ -73,7 +79,7 @@ public partial class MainWindow : Window
         var resolver = new SiteResolver(new LuaResolver(_registry, _web, _browser), generic);
 
         _queue = new DownloadQueue(_paths, _settings,
-            new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver, _identity));
+            new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver, _identity, _naming));
         _queue.Load();
 
         _view = CollectionViewSource.GetDefaultView(_queue.Items);
@@ -93,8 +99,61 @@ public partial class MainWindow : Window
 
         _bridge = StartBridge();
 
+        var appVersion = $"{v?.Major}.{v?.Minor}.{v?.Build}";
+        _reporter = new DiagnosticReporter(_github, DiagnosticReporter.DefaultRepo, appVersion)
+        {
+            SendWithoutAsking = _settings.AutoUploadDiagnostics,
+            AskBeforeSending = AskBeforeSendingReport,
+        };
+
         RefreshStatus();
         WarnIfToolsMissing();
+        _ = SyncConfigsAsync();
+    }
+
+    /// <summary>
+    /// ดึง config ของเว็บรุ่นล่าสุดมาตอนเปิดแอป · ทำเบื้องหลัง ไม่ขวางการใช้งาน
+    /// ล้มเหลวก็ไม่เป็นไร ใช้ config ที่มีอยู่ต่อได้
+    /// </summary>
+    private async Task SyncConfigsAsync()
+    {
+        try
+        {
+            var sync = new ConfigSync(_paths, _github);
+            var result = await Task.Run(() => sync.SyncAsync(CancellationToken.None));
+            if (!result.Changed) return;
+
+            _registry.Load();   // ใช้ของใหม่ทันที ไม่ต้องรอเปิดแอปรอบหน้า
+            StatusText.Text = result.Message + $" · รองรับ {_registry.Modules.Count} เว็บ";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "ซิงก์ config ไม่สำเร็จ: " + ex.Message.Split('\n')[0];
+        }
+    }
+
+    /// <summary>
+    /// ขออนุญาตก่อนส่ง log ขึ้น GitHub ทุกครั้ง
+    /// โชว์ให้เห็นด้วยว่าจะส่งอะไรไปบ้าง — ไม่ใช่ขอแบบลอยๆ
+    /// </summary>
+    private bool AskBeforeSendingReport(DiagnosticReport report)
+    {
+        return Dispatcher.Invoke(() =>
+        {
+            var preview = string.Join("\n", report.Trail.Take(8).Select(t => "  • " + t));
+            var answer = MessageBox.Show(this,
+                $"โหลดเว็บ {report.Host} ไม่สำเร็จ\n\n" +
+                "ส่งข้อมูลนี้ขึ้น repo ส่วนตัวเพื่อเอาไปเขียน config ของเว็บนี้ไหม?\n\n" +
+                $"โดเมน: {report.Host}\n" +
+                $"path ของหน้า: {report.UrlPath}\n" +
+                $"สาเหตุ: {report.Reason}\n" +
+                (preview.Length > 0 ? $"ทางที่เดินมา:\n{preview}\n" : "") +
+                "\nไม่ส่ง: url เต็ม, query string, cookie, ชื่อไฟล์ปลายทาง",
+                "ส่ง log ให้ไปทำ config?", MessageBoxButton.YesNo, MessageBoxImage.Question,
+                MessageBoxResult.No);
+
+            return answer == MessageBoxResult.Yes;
+        });
     }
 
     /// <summary>คิวจบแล้วบอกผ่านถาดระบบ · ผู้ใช้จะได้ไม่ต้องนั่งเฝ้าหน้าต่าง</summary>
@@ -103,6 +162,11 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             RefreshStatus();
+
+            // เว็บที่ยังไม่มี config — เสนอส่ง log ไปให้เขียน config ต่อ
+            if (item is { Status: DownloadStatus.Failed, Diagnostics.Count: > 0 })
+                _ = SendReportAsync(item);
+
             if (_queue.Items.Any(i => !i.IsFinished)) return;
 
             var done = _queue.Items.Count(i => i.Status == DownloadStatus.Done);
@@ -110,6 +174,26 @@ public partial class MainWindow : Window
             _tray.Notify("คิวจบแล้ว",
                 failed > 0 ? $"เสร็จ {done} · ล้มเหลว {failed}" : $"เสร็จครบ {done} รายการ");
         });
+    }
+
+    private async Task SendReportAsync(DownloadItem item)
+    {
+        var diagnostics = item.Diagnostics;
+        item.Diagnostics = null;   // เสนอครั้งเดียวพอ ไม่ถามซ้ำถ้าผู้ใช้กดลองใหม่
+
+        try
+        {
+            var result = await _reporter.ReportAsync(
+                item.SourceUrl, item.FailureReason, diagnostics, CancellationToken.None);
+
+            if (result.Ok) StatusText.Text = "ส่ง log แล้ว — config ของเว็บนี้จะตามมาทีหลัง";
+            else if (result.Error is { } error && !error.Contains("ไม่ได้อนุญาต"))
+                StatusText.Text = "ส่ง log ไม่สำเร็จ: " + error;
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "ส่ง log ไม่สำเร็จ: " + ex.Message.Split('\n')[0];
+        }
     }
 
     /// <summary>

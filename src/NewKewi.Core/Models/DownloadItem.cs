@@ -90,6 +90,13 @@ public sealed class DownloadItem : INotifyPropertyChanged
     /// <summary>ความชัดที่ผู้ใช้เลือก (ความสูงของภาพ) · 0 = เอาดีที่สุดที่มี</summary>
     public int PreferredHeight { get; set; }
 
+    /// <summary>
+    /// ทางที่ตัวแกะลิงก์เดินมาตอนหาลิงก์ไม่เจอ · เอาไปทำ diagnostic bundle ต่อ
+    /// ไม่เก็บลง queue.json เพราะมันคือข้อมูลของรอบนั้นและอาจมีร่องรอยของเว็บที่ผู้ใช้เข้า
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyList<string>? Diagnostics { get; set; }
+
     [JsonIgnore]
     public bool IsFinished => Status is DownloadStatus.Done or DownloadStatus.Failed or DownloadStatus.Skipped;
 

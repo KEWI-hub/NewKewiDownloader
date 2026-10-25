@@ -344,22 +344,29 @@ heartbeat จาก UI thread ทุก 500ms · thread เฝ้าดู ถ�
 ```json
 {
   "schema": 1,
-  "app": "1.0.0",
-  "when": "2026-10-24T13:20:00Z",
+  "app": "0.7.0",
+  "when": "2026-10-25T13:20:00Z",
   "host": "example.com",
   "urlHash": "sha256 ของ url เต็ม",
-  "urlPath": "/movie/<id>",           // เก็บ path ไม่เก็บ query ที่อาจมี token
-  "steps": [
-    {"stage": "ytdlp-probe", "exit": 1, "stderr": "…"},
-    {"stage": "fetch-simple", "status": 403, "bytes": 1420},
-    {"stage": "fetch-chrome", "status": 200, "bytes": 88210},
-    {"stage": "scan", "found": []},
-    {"stage": "cdp-capture", "requests": ["…/x.js", "…/api/play"]}
-  ],
-  "htmlSample": "2 KB แรกของหน้าหลังรัน JS",
-  "capturedRequests": ["url + content-type เท่านั้น"]
+  "urlPath": "/movie/abc123",
+  "reason": "หาลิงก์วิดีโอในหน้านี้ไม่เจอ — ต้องเขียน config ของเว็บนี้",
+  "trail": [
+    "fetch:Simple status=403 bytes=5584",
+    "browser:silent bytes=28665 requests=12",
+    "frame depth=1 status=200 player.example.com",
+    "captured matches=0"
+  ]
 }
 ```
+
+ร่องรอย (`trail`) มาจาก `GenericResolver` ซึ่งบันทึกไว้ระหว่างเดินอยู่แล้ว
+ทุกบรรทัดผ่าน `DiagnosticBuilder.Scrub` ก่อนเสมอ ซึ่ง:
+
+- ตัด **query string** ของทุก url ที่โผล่ในข้อความ (ในนั้นมักมี token กับ id ของผู้ใช้)
+- ตัดค่าที่หน้าตาเป็นความลับ (`token=` `key=` `session=` `signature=` …) เหลือ `***`
+- ตัดความยาวเกิน 300 ตัวอักษรต่อบรรทัด และเก็บไม่เกิน 40 บรรทัด
+
+คัดกรองที่เดียวใน `DiagnosticBuilder` ไม่กระจายไปทำตามจุดต่างๆ — ตรวจง่ายและเทสคลุมได้หมด
 
 - **ถามผู้ใช้ก่อนส่งทุกครั้ง** (ติ๊ก "ส่งอัตโนมัติต่อไป" ได้) — bundle มีชื่อเว็บที่ผู้ใช้เข้า จึงต้องขอก่อน
 - ส่งขึ้น `KEWI-hub/NewKewi-logs` (private) path `needs-config/<host>/<วันที่>-<hash8>.json`
@@ -463,7 +470,11 @@ MV3 · อยู่ใน `extension/`
 - `titleFrom` เป็น **XPath** (ชุดเดียวกับที่ `dom.SelectValue` ใช้) ไม่ใช่ CSS selector
   เพราะทั้งแอปใช้ XPath อยู่แล้ว จะได้ไม่มีสองภาษาให้จำ
 - กฎเรียงตามลำดับในไฟล์ ตัวบนชนะ · ไม่มีกฎไหนตรงก็ใช้ `default`
-- `replace` เป็น regex ไว้เก็บกวาดชื่อที่เว็บใส่ขยะมา
+- `replace` ทำกับ **ค่าของ `{title}` ก่อน**เอาไปใส่ในรูปแบบ ไม่ใช่ทำกับชื่อที่ประกอบเสร็จแล้ว
+
+> **ทำไมต้องเป็นลำดับนี้** — เจอตอนเขียนเทส: ขยะมาจากชื่อหน้าเว็บ (เช่นลงท้ายด้วย `- ชื่อเว็บ`)
+> กฎที่คนเขียนจึงมักยึดท้ายสตริงด้วย `$` ถ้าเอาไปทำหลังประกอบเสร็จ กฎจะหยุดแมตช์ทันที
+> ที่รูปแบบมีอะไรต่อท้าย เช่น `{title} ({quality})` — เงียบๆ โดยไม่มี error ให้เห็น
 
 **ข้อจำกัดที่ต้องบอกตรงๆ:** คลิปที่ถูกคุ้มครองด้วย DRM (Widevine/PlayReady) โหลดไม่ได้
 ไม่ว่าจะเขียน config ยังไง — แอปควรตรวจเจอแล้วบอกไปตรงๆ ไม่ใช่ปล่อยให้ผู้ใช้รอแล้วล้มเหลวงงๆ

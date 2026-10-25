@@ -18,7 +18,8 @@ public sealed class DownloadEngine(
     AppSettings settings,
     IProcessRunner runner,
     IStreamResolver? resolver = null,
-    BrowserIdentity? identity = null)
+    BrowserIdentity? identity = null,
+    NamingRules? naming = null)
 {
     private readonly Remuxer _remuxer = new(paths, runner);
 
@@ -55,6 +56,8 @@ public sealed class DownloadEngine(
         Directory.CreateDirectory(item.OutputDirectory);
 
         if (!TryResolve(item, ct)) return;
+
+        ApplyNaming(item);
 
         if (ShouldSkip(item))
         {
@@ -99,6 +102,8 @@ public sealed class DownloadEngine(
             var fallback = resolver.ResolveFallback(item.SourceUrl, ct);
             if (!fallback.Ok)
             {
+                // เก็บร่องรอยไว้ให้แอปเอาไปทำ diagnostic bundle ต่อ (ถ้าผู้ใช้อนุญาต)
+                item.Diagnostics = fallback.Trail;
                 item.Fail(fallback.Error ?? failure.Message);
                 return;
             }
@@ -189,6 +194,40 @@ public sealed class DownloadEngine(
             item.Title = outcome.Title!;
         item.Stream = Pick(outcome.Streams, item.PreferredHeight);
         return true;
+    }
+
+    /// <summary>
+    /// ใช้กฎตั้งชื่อไฟล์ของเว็บนั้น (ถ้ามี)
+    ///
+    /// ไม่มีกฎที่ตรงโดเมน หรือผลออกมาว่างเปล่า → ใช้ชื่อเดิมต่อ
+    /// กฎที่เขียนผิดต้องไม่ทำให้ไฟล์ได้ชื่อประหลาดหรือโหลดไม่ได้
+    /// </summary>
+    private void ApplyNaming(DownloadItem item)
+    {
+        if (naming is null) return;
+
+        var host = Uri.TryCreate(item.SourceUrl, UriKind.Absolute, out var uri) ? uri.Host : "";
+        var rule = naming.Match(host);
+
+        if (!string.IsNullOrWhiteSpace(rule.Folder))
+        {
+            var folder = YtDlpArgs.SanitizeTemplate(rule.Folder);
+            item.OutputDirectory = Path.Combine(item.OutputDirectory, folder);
+            Directory.CreateDirectory(item.OutputDirectory);
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Title)) return;   // ยังไม่รู้ชื่อ ปล่อยให้ yt-dlp ตั้งเอง
+
+        var named = NamingRules.Apply(rule, new Dictionary<string, string>
+        {
+            ["title"] = item.Title,
+            ["host"] = host,
+            ["quality"] = item.Stream is { Height: > 0 } s ? s.Height + "p" : "",
+            ["date"] = DateTime.Now.ToString("yyyy-MM-dd"),
+            ["id"] = uri is not null ? uri.Segments.LastOrDefault()?.Trim('/') ?? "" : "",
+        });
+
+        if (named.Length > 0) item.Title = named;
     }
 
     /// <summary>เลือกความชัด · ผู้ใช้ระบุมาก็เอาตัวที่ใกล้ที่สุดโดยไม่เกิน ไม่งั้นเอาสูงสุด</summary>
