@@ -56,9 +56,12 @@ NewKewiDownloader/
 
 | repo | สถานะ | หน้าที่ |
 |---|---|---|
-| `KEWI-hub/NewKewiDownloader` | public | โค้ด + release |
-| `KEWI-hub/NewKewi-configs` | public | `modules/lua/` ของจริง แอปซิงก์มาเองทุกครั้งที่เปิด |
+| [`KEWI-hub/NewKewiDownloader`](https://github.com/KEWI-hub/NewKewiDownloader) | public | โค้ด + release |
+| [`KEWI-hub/NewKewi-configs`](https://github.com/KEWI-hub/NewKewi-configs) | public | `modules/lua/` ของจริง แอปซิงก์มาเองทุกครั้งที่เปิด |
 | `KEWI-hub/NewKewi-logs` | **private** | log ของเว็บที่โหลดไม่ได้ ไว้ให้เอามาทำ config |
+
+**เช็คทุกครั้งว่า public/private ไม่สลับกัน** — repo log เป็น private เสมอ เพราะข้างในมีชื่อเว็บที่ผู้ใช้เข้า
+ตรวจด้วย `gh repo view KEWI-hub/NewKewi-logs --json isPrivate`
 
 แยก config ออกจากโค้ด เพื่อให้เพิ่ม/แก้เว็บได้โดยไม่ต้องออก release ใหม่
 (แบบเดียวกับ `repositories.json` ของ HDoujinDownloader)

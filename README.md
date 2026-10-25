@@ -50,6 +50,16 @@ dotnet test --settings tests/NewKewi.Tests/live.runsettings
 
 ## Layout
 
+## Repositories
+
+| Repo | What |
+|---|---|
+| [NewKewiDownloader](https://github.com/KEWI-hub/NewKewiDownloader) | this one — code and releases |
+| [NewKewi-configs](https://github.com/KEWI-hub/NewKewi-configs) | per-site Lua modules, synced by the app on startup |
+| NewKewi-logs (private) | diagnostic reports for sites that still need a config |
+
+## Layout
+
 | Path | What |
 |---|---|
 | `src/NewKewi.App` | WPF interface |
