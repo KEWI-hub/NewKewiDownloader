@@ -16,7 +16,13 @@ public class LiveToolInstallTests
     [Fact]
     public async Task โหลดเครื่องมือครบทั้งสี่ตัวจาก_url_จริงแล้วรันได้()
     {
-        var root = Path.Combine(Path.GetTempPath(), "newkewi-livetools-" + Guid.NewGuid().ToString("n")[..8]);
+        // ตั้ง NEWKEWI_TOOLS_DIR ชี้ไปที่โฟลเดอร์ที่แตกจาก release จริงได้
+        // เพื่อพิสูจน์ว่าชุดที่ผู้ใช้โหลดไปโหลดเครื่องมือเองได้จริง ไม่ใช่แค่ในโฟลเดอร์ชั่วคราว
+        var fromEnv = Environment.GetEnvironmentVariable("NEWKEWI_TOOLS_DIR");
+        var root = string.IsNullOrWhiteSpace(fromEnv)
+            ? Path.Combine(Path.GetTempPath(), "newkewi-livetools-" + Guid.NewGuid().ToString("n")[..8])
+            : fromEnv;
+
         var paths = new AppPaths(root);
         paths.EnsureCreated();
 
@@ -51,7 +57,11 @@ public class LiveToolInstallTests
         }
         finally
         {
-            try { Directory.Delete(root, recursive: true); } catch { /* ช่างมัน */ }
+            // ลบเฉพาะโฟลเดอร์ชั่วคราวที่เทสสร้างเอง · โฟลเดอร์ที่ผู้ใช้ชี้มาต้องไม่ถูกแตะ
+            if (string.IsNullOrWhiteSpace(fromEnv))
+            {
+                try { Directory.Delete(root, recursive: true); } catch { /* ช่างมัน */ }
+            }
         }
     }
 }
