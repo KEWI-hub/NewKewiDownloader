@@ -80,9 +80,16 @@ public sealed class DownloadQueue
         if (_running.TryRemove(item.Id, out var cts)) cts.Cancel();
     }
 
+    /// <summary>
+    /// เริ่มคิว · เรียกซ้ำได้ตลอด และ**ต้อง**หยิบงานทุกครั้งที่เรียก
+    ///
+    /// เดิมมี `if (IsRunning) return;` อยู่ข้างบน ซึ่งทำให้ลิงก์ที่ส่งเข้ามาทีหลัง
+    /// (จากส่วนขยาย หรือกดเพิ่มลิงก์รอบสอง) ไม่เคยถูกหยิบขึ้นมาเลย
+    /// เพราะคิวเคยเริ่มไปแล้วรอบหนึ่ง IsRunning จึงค้างเป็น true
+    /// งานนอนอยู่ที่ Queued ตลอดไป และปุ่มเริ่มก็เทาเพราะมองว่าคิวกำลังเดินอยู่
+    /// </summary>
     public void Start()
     {
-        if (IsRunning) return;
         if (_lifetime.IsCancellationRequested) _lifetime = new CancellationTokenSource();
         IsRunning = true;
         Pump();

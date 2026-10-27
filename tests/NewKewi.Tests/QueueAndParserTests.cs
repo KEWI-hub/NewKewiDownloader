@@ -136,6 +136,44 @@ public class QueueTests
         Assert.Equal(0, item.Progress);
     }
 
+    /// <summary>
+    /// ลิงก์ที่ส่งเข้ามาทีหลัง (จากส่วนขยาย หรือกดเพิ่มลิงก์ซ้ำ) ต้องถูกหยิบขึ้นมาโหลดด้วย
+    ///
+    /// เคสจริงที่เจอ: คิวเคยเริ่มไปแล้วรอบหนึ่ง IsRunning เลยค้างเป็น true
+    /// พอ Start() เจอว่า "กำลังรันอยู่" มันคืนค่าทันทีโดยไม่เรียก Pump()
+    /// ลิงก์ใหม่เลยนอนอยู่ที่ Queued ตลอดไป และปุ่มเริ่มก็เทาเพราะ IsRunning เป็น true
+    /// </summary>
+    [Fact]
+    public async Task ลิงก์ที่มาทีหลังตอนคิวเดินอยู่แล้วต้องถูกโหลดด้วย()
+    {
+        var (q, app) = Make();
+        using var _ = app;
+        app.Runner.ProducedFile = Path.Combine(app.Output, "ได้ไฟล์.mp4");
+
+        var first = q.Add("https://example.com/1", "คลิปแรก");
+        first.Force = true;
+        q.Start();
+
+        await WaitUntilDone(q, TimeSpan.FromSeconds(10));
+        Assert.Equal(DownloadStatus.Done, first.Status);
+        Assert.True(q.IsRunning, "คิวยังเดินอยู่หลังงานแรกจบ");
+
+        // ลิงก์ที่สองมาตอนคิวเดินอยู่แล้ว — เหมือนตอนส่วนขยายส่งเข้ามา
+        var second = q.Add("https://example.com/2", "คลิปที่สอง");
+        second.Force = true;
+        q.Start();
+
+        await WaitUntilDone(q, TimeSpan.FromSeconds(10));
+        Assert.Equal(DownloadStatus.Done, second.Status);
+    }
+
+    private static async Task WaitUntilDone(DownloadQueue q, TimeSpan limit)
+    {
+        var deadline = DateTime.UtcNow + limit;
+        while (q.Items.Any(i => !i.IsFinished) && DateTime.UtcNow < deadline)
+            await Task.Delay(50);
+    }
+
     [Fact]
     public async Task โหลดหลายลิงก์พร้อมกันไม่เกินที่ตั้งไว้()
     {

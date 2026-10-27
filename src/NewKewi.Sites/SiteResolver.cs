@@ -23,7 +23,8 @@ public sealed class SiteResolver(
     public ResolveOutcome Resolve(string url, CancellationToken ct)
     {
         var r = lua.Resolve(url, ct);
-        return new ResolveOutcome(r.Handled, r.ModuleName, r.Title, r.Streams, r.Error);
+        // ส่ง log ของ module ต่อไปเป็น Trail ด้วย ไม่งั้นร่องรอยที่ module อุตส่าห์เขียนไว้หายหมด
+        return new ResolveOutcome(r.Handled, r.ModuleName, r.Title, r.Streams, r.Error, r.Log);
     }
 
     public ResolveOutcome ResolveFallback(string url, CancellationToken ct)

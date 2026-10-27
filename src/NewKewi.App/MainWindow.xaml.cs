@@ -73,13 +73,17 @@ public partial class MainWindow : Window
 
         _naming = NamingRules.Load(Path.Combine(_paths.Root, "modules", "naming.json"));
 
-        var generic = new GenericResolver(new PageFetcher(_web, _browser), _web, _browser, _naming)
+        var fetcher = new PageFetcher(_web, _browser);
+
+        var generic = new GenericResolver(fetcher, _web, _browser, _naming)
         {
             AllowInteractiveBotWall = _settings.AllowInteractiveBotWall,
         };
 
+        // ส่ง fetcher ให้ module ด้วย ไม่งั้นมันได้แต่หน้าจาก HttpClient
+        // ซึ่งอ่านเว็บที่สร้างเนื้อหาด้วย JS หรือเว็บที่กันบอทไม่ได้เลย
         var resolver = new SiteResolver(
-            new LuaResolver(_registry, _web, _browser), generic, new LocalPlaylistWriter(_web));
+            new LuaResolver(_registry, _web, _browser, fetcher), generic, new LocalPlaylistWriter(_web));
 
         _queue = new DownloadQueue(_paths, _settings,
             new DownloadEngine(_paths, _settings, new ProcessRunner(), resolver, _identity, _naming));
@@ -384,7 +388,9 @@ public partial class MainWindow : Window
             : $"ทั้งหมด {items.Count} · กำลังโหลด {active} · รอคิว {queued} · ล้มเหลว {failed}" +
               (speed > 0 ? $" · รวม {ByteSizeConverter.Format(speed)}/s" : "");
 
-        StartButton.IsEnabled = !_queue.IsRunning && queued > 0;
+        // มีงานรออยู่ก็กดเริ่มได้เสมอ ไม่ว่าคิวจะมองว่าตัวเองเดินอยู่หรือไม่
+        // เดิมเช็ค !IsRunning ด้วย ทำให้ปุ่มเทาค้างทั้งที่ยังมีของรอโหลด แล้วผู้ใช้ไปต่อไม่ได้
+        StartButton.IsEnabled = queued > 0;
         StopButton.IsEnabled = _queue.IsRunning;
     }
 

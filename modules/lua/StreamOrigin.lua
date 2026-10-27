@@ -30,27 +30,44 @@ local function getPlayerUrl()
 end
 
 -- โดเมน API ซ่อนอยู่ในไฟล์ chunk ของ Next.js
-local function findApiBase(playerUrl, playerHtml)
-    local direct = playerHtml:regex('https://[A-Za-z0-9.-]+/app/v1', 0)
-    if not isempty(direct) then
-        return direct:before('/app/v1')
+--
+-- **คืนเป็นรายการ ไม่ใช่ตัวเดียว** — ในไฟล์ chunk มีหลายโดเมนปนกัน
+-- เคยคว้าตัวแรกที่เจอแล้วได้ api.streamorigin.cc ซึ่งตอบ 401
+-- ส่วนตัวที่ใช้ได้จริงคือ embedorigin.cc ที่อยู่ถัดไป
+local function apiCandidates(playerUrl, playerHtml)
+    local found, seen = {}, {}
+
+    local function take(domain)
+        if isempty(domain) or seen[domain] then return end
+        -- เอาเฉพาะโดเมนที่หน้าตาเป็นของ player เจ้านี้ ไม่งั้นจะได้ CDN ของคนอื่นมาเต็มไปหมด
+        if not (domain:contains('embed') or domain:contains('origin')) then return end
+        seen[domain] = true
+        table.insert(found, domain)
     end
+
+    take(playerHtml:regex([[(https://[A-Za-z0-9.-]+)/app/v1]], 1))
 
     local chunkDom = Dom.New(playerHtml)
     for _, src in ipairs(chunkDom.SelectValues('//script/@src')) do
         if src:contains('_next/static/chunks') then
             local js = http.Get(UrlJoin(playerUrl, src))
-            local found = js:regex('"(https://[A-Za-z0-9.-]+)"[^"]*app/v1', 1)
-            if isempty(found) then
-                found = js:regex('https://[A-Za-z0-9.-]+[.]cc', 0)
-            end
-            if not isempty(found) then
-                return found
+            if js:contains('app/v1') then
+                for _, domain in ipairs(js:regexall([[https://[A-Za-z0-9.-]+]], 0)) do
+                    take(domain)
+                end
             end
         end
     end
 
-    return ''
+    -- โดเมนที่มีคำว่า embed มักเป็นตัวที่รับคำขอของ player จริง ลองก่อน
+    local ordered = {}
+    for _, d in ipairs(found) do
+        if d:contains('embed') then table.insert(ordered, d) end
+    end
+    for _, d in ipairs(found) do
+        if not d:contains('embed') then table.insert(ordered, d) end
+    end
+    return ordered
 end
 
 function GetInfo()
@@ -68,8 +85,8 @@ function GetStreams()
     http.Headers['Referer'] = playerUrl
     local playerHtml = http.Get(playerUrl)
 
-    local apiBase = findApiBase(playerUrl, playerHtml)
-    if isempty(apiBase) then
+    local candidates = apiCandidates(playerUrl, playerHtml)
+    if #candidates == 0 then
         log.Warn('หาโดเมน API ใน chunk ของ player ไม่เจอ — เจ้านี้อาจเปลี่ยนโครงหน้าอีกแล้ว')
         return
     end
@@ -79,10 +96,20 @@ function GetStreams()
 
     http.Headers['Referer'] = playerOrigin .. '/'
     http.Headers['Origin']  = playerOrigin
-    local answer = http.GetJson(apiBase .. '/app/v1/play/' .. id .. '?embed=1')
 
-    if answer == nil or isempty(answer.hls) then
-        log.Warn('API ตอบมาแต่ไม่มีช่อง hls')
+    -- ลองทีละโดเมนจนกว่าจะได้ hls · บางตัวตอบ 401 เพราะไม่ใช่ตัวที่รับคำขอของ player
+    local answer = nil
+    for _, apiBase in ipairs(candidates) do
+        local try = http.GetJson(apiBase .. '/app/v1/play/' .. id .. '?embed=1')
+        if try ~= nil and not isempty(try.hls) then
+            answer = try
+            break
+        end
+        log.Warn('โดเมน ' .. apiBase .. ' ไม่ให้ hls มา ลองตัวถัดไป')
+    end
+
+    if answer == nil then
+        log.Warn('ลองครบ ' .. #candidates .. ' โดเมนแล้วยังไม่ได้ hls')
         return
     end
 

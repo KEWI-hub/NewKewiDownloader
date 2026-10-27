@@ -16,8 +16,9 @@ public sealed class BrowserIdentity
     public BrowserIdentity(AppPaths paths)
     {
         _file = Path.Combine(paths.Data, "identity.json");
-        var saved = Json.Read(_file, new Record());
-        if (!string.IsNullOrWhiteSpace(saved.UserAgent)) UserAgent = saved.UserAgent;
+        // คลายค่าที่เคยเก็บไว้ด้วย เผื่อเป็นของเก่าที่ยังมีคำว่า Headless ติดอยู่
+        var saved = Normalize(Json.Read(_file, new Record()).UserAgent);
+        if (!string.IsNullOrWhiteSpace(saved)) UserAgent = saved;
     }
 
     /// <summary>UA จริงของ Chromium พกพา · null = ยังไม่เคยเปิดเบราว์เซอร์</summary>
@@ -25,12 +26,22 @@ public sealed class BrowserIdentity
 
     public void Set(string? userAgent)
     {
-        var ua = userAgent?.Trim();
+        var ua = Normalize(userAgent);
         if (string.IsNullOrEmpty(ua) || ua == UserAgent) return;
 
         UserAgent = ua;
         Json.Write(_file, new Record { UserAgent = ua });
     }
+
+    /// <summary>
+    /// Chromium ที่รันแบบไม่มีหน้าต่างบอกตัวเองว่า <c>HeadlessChrome/…</c>
+    ///
+    /// Cloudflare บล็อกคำว่า Headless ใน UA ตรงๆ · ถ้าเอา UA นั้นไปใช้กับ HttpClient
+    /// จะโดน 403 ทุกครั้งทั้งที่เบราว์เซอร์ตัวเดียวกันเปิดหน้าได้ปกติ
+    /// ตัดคำว่า Headless ออกให้เหลือ UA ของ Chrome ปกติ
+    /// </summary>
+    public static string? Normalize(string? userAgent)
+        => userAgent?.Replace("HeadlessChrome", "Chrome", StringComparison.Ordinal).Trim();
 
     private sealed class Record
     {

@@ -26,7 +26,8 @@ public sealed record ResolveResult(
 /// module พังหรือไม่คืนสตรีมเลย = ถือว่าแกะไม่ได้ ไม่มี retry
 /// </summary>
 public sealed class LuaResolver(
-    SiteRegistry registry, IWebClient web, Browser.IBrowser? browser = null) : IStreamResolver
+    SiteRegistry registry, IWebClient web, Browser.IBrowser? browser = null,
+    PageFetcher? fetcher = null) : IStreamResolver
 {
     /// <summary>หน้าตาที่ <see cref="NewKewi.Core.Engine.DownloadEngine"/> เรียกใช้</summary>
     ResolveOutcome IStreamResolver.Resolve(string url, CancellationToken ct)
@@ -167,15 +168,39 @@ public sealed class LuaResolver(
         }
     }
 
+    /// <summary>
+    /// ดึงหน้าแรกให้ module
+    ///
+    /// ใช้ชั้นดึงหน้าเว็บเต็มรูปแบบเมื่อมีให้ · เดิมใช้ HttpClient ล้วน ซึ่งแปลว่า
+    /// module ไม่มีทางได้หน้าของเว็บที่สร้างเนื้อหาด้วย JS หรือเว็บที่กันบอท
+    /// ทั้งที่แอปมีเบราว์เซอร์จริงอยู่แล้ว
+    /// </summary>
     private string SafeGet(string url, CancellationToken ct)
     {
-        try { return web.Get(url, new Dictionary<string, string>(), ct).Body ?? ""; }
+        try
+        {
+            if (fetcher is not null)
+                return fetcher.FetchAsync(url, allowVisible: false, ct).GetAwaiter().GetResult().Html;
+
+            return web.Get(url, new Dictionary<string, string>(), ct).Body ?? "";
+        }
         catch (OperationCanceledException) { throw; }
         catch { return ""; }   // ดึงหน้าแรกไม่ได้ก็ยังให้ module ลองเอง มันอาจคุยกับ API ตรงๆ
     }
 
+    /// <summary>
+    /// ล้มเหลวพร้อมเหตุผลที่ใช้ไล่ปัญหาได้จริง
+    ///
+    /// ต่อข้อความสุดท้ายที่ module เขียนไว้ด้วย เพราะ module รู้ว่ามันไปตันตรงไหน
+    /// เดิมเก็บ log ไว้แต่ไม่เคยเอาออกมาให้ใครเห็น ผู้ใช้เลยได้แค่
+    /// "module รันผ่านแต่ไม่ได้สตรีมกลับมาเลย" ซึ่งบอกอะไรไม่ได้เลย
+    /// </summary>
     private static ResolveResult Failed(SiteModuleInfo info, string error, IReadOnlyList<string> log)
-        => new(true, info.Name, null, [], error, log);
+    {
+        var lastWarning = log.LastOrDefault(l => l.StartsWith("WARN", StringComparison.Ordinal));
+        var detail = lastWarning is null ? error : $"{error} ({lastWarning[4..].Trim()})";
+        return new ResolveResult(true, info.Name, null, [], detail, log);
+    }
 
     private static string Describe(Exception ex) => ex.Message.Split('\n')[0].Trim();
 

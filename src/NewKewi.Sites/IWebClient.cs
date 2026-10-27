@@ -92,10 +92,23 @@ public sealed class WebClient : IWebClient, IDisposable
         var ua = _identity?.UserAgent;
         req.Headers.TryAddWithoutValidation("User-Agent",
             string.IsNullOrWhiteSpace(ua) ? DefaultUserAgent : ua);
-        req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9,th;q=0.8");
 
+        // หัวชุดที่เบราว์เซอร์จริงส่งเสมอ
+        // คำขอที่ไม่มี Accept เลยคือสัญญาณบอทที่ชัดมาก และทำให้โดน 403 ทั้งที่ UA ดูปกติ
+        req.Headers.TryAddWithoutValidation("Accept",
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+        req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9,th;q=0.8");
+        req.Headers.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1");
+        req.Headers.TryAddWithoutValidation("Sec-Fetch-Dest", "document");
+        req.Headers.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
+        req.Headers.TryAddWithoutValidation("Sec-Fetch-Site", "none");
+        req.Headers.TryAddWithoutValidation("Sec-Fetch-User", "?1");
+
+        // header ที่ผู้เรียกระบุมาต้อง**ทับ**ของตั้งต้น ไม่ใช่ถูกเพิ่มเข้าไปเป็นค่าที่สอง
+        // (FirePlayer ส่ง Sec-Fetch ชุดของมันเองมา ถ้าซ้อนกันสองค่าจะโดนปฏิเสธ)
         foreach (var (k, v) in headers)
         {
+            req.Headers.Remove(k);
             if (!req.Headers.TryAddWithoutValidation(k, v))
                 req.Content?.Headers.TryAddWithoutValidation(k, v);
         }
