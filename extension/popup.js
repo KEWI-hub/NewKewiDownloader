@@ -1,121 +1,82 @@
-// เมนูของส่วนขยาย · บอกสถานะการเชื่อมต่อกับแอป และลิสต์วิดีโอที่ดักได้ในแท็บนี้
+// เมนูของส่วนขยาย — วิดีโอในแท็บ · คิวงาน · บันทึก
+//
+// ไม่มีโปรแกรมข้างนอกให้ต่อแล้ว ทุกอย่างเกิดในเบราว์เซอร์
 
-const stateBox = document.getElementById('state');
-const actions = document.getElementById('actions');
-const list = document.getElementById('list');
-const empty = document.getElementById('empty');
+const $ = (id) => document.getElementById(id);
+const ask = (message) => chrome.runtime.sendMessage(message).catch(() => null);
 
-function setState(kind, text) {
-  stateBox.className = 'state ' + kind;
-  stateBox.textContent = text;
+let tabId = -1;
+let timer = 0;
+
+function setState(text, kind) {
+  const node = $('state');
+  node.textContent = text;
+  node.className = `state ${kind}`;
 }
 
-async function currentTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
+/** ชื่อไฟล์ที่เน้นนามสกุล .mp4 ให้เห็นชัดว่าได้อะไรแน่ */
+function nameNode(filename) {
+  const span = document.createElement('span');
+  span.className = 'name';
+  span.title = filename;
+  span.append(document.createTextNode(filename.replace(/\.mp4$/i, '')));
+  const ext = document.createElement('span');
+  ext.className = 'ext';
+  ext.textContent = '.mp4';
+  span.appendChild(ext);
+  return span;
 }
 
-async function refreshState() {
-  const status = await chrome.runtime.sendMessage({ type: 'status' });
-  actions.innerHTML = '';
-
-  if (status.state === 'ready') {
-    setState('ok', `ต่อกับแอปแล้ว (รุ่น ${status.info.version})`);
-    return true;
-  }
-
-  if (status.state === 'needs-pairing') {
-    setState('warn', 'ยังไม่ได้จับคู่กับแอป — กดปุ่มข้างล่างแล้วไปกดอนุญาตในหน้าต่างแอป');
-
-    const button = document.createElement('button');
-    button.textContent = 'จับคู่กับแอป';
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      const answer = await chrome.runtime.sendMessage({ type: 'pair' });
-      if (answer.ok) await refreshState();
-      else {
-        setState('bad', answer.reason || 'จับคู่ไม่สำเร็จ');
-        button.disabled = false;
-      }
-    });
-    actions.appendChild(button);
-    return false;
-  }
-
-  setState('bad', 'ติดต่อแอปไม่ได้ — เปิด New Kewi Video Downloader ไว้หรือยัง');
-  return false;
-}
+// ---------- วิดีโอในแท็บ ----------
 
 async function refreshList() {
-  const tab = await currentTab();
-  const answer = await chrome.runtime.sendMessage({ type: 'qualities', tabId: tab.id });
-  const items = (answer && answer.qualities) || [];
+  const answer = await ask({ type: 'qualities', tabId });
+  const list = $('list');
+  list.textContent = '';
 
-  list.innerHTML = '';
-  empty.hidden = items.length > 0;
+  const items = (answer && answer.qualities) || [];
+  $('empty').hidden = items.length > 0;
+
+  const real = items.filter((q) => !q.ad);
+  setState(real.length > 0
+    ? `เจอ ${real.length} ตัวเลือกในแท็บนี้`
+    : 'ยังไม่เจอวิดีโอ — กดเล่นวิดีโอก่อนแล้วเปิดเมนูนี้ใหม่',
+  real.length > 0 ? 'ok' : 'warn');
 
   for (const q of items) {
     const row = document.createElement('li');
 
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = shortName(q.url);
-    name.title = q.url;
-
     const tag = document.createElement('span');
     tag.className = 'tag';
-    tag.textContent = q.label === 'auto' ? q.kind.toUpperCase() : q.label;
+    tag.textContent = (q.ad ? 'โฆษณา · ' : '') + (q.height ? `${q.height}p` : q.kind.toUpperCase());
 
-    const send = document.createElement('button');
-    send.textContent = 'โหลด';
-    send.addEventListener('click', () => sendOne(q, tab, send));
+    const label = document.createElement('span');
+    label.className = 'name';
+    label.title = q.url;
+    label.textContent = shortName(q.url);
 
-    row.append(name, tag, send);
+    const go = document.createElement('button');
+    go.className = 'small';
+    go.textContent = 'โหลด .mp4';
+    go.disabled = q.kind === 'dash';
+    if (q.kind === 'dash') go.title = 'ยังโหลด DASH ไม่ได้';
+
+    go.addEventListener('click', async () => {
+      go.disabled = true;
+      const tab = await chrome.tabs.get(tabId).catch(() => null);
+      const started = await ask({
+        type: 'download',
+        payload: {
+          url: q.url, audioUrl: q.audioUrl || null, kind: q.kind, height: q.height || 0,
+          title: tab ? tab.title : '', pageUrl: (answer && answer.pageUrl) || (tab ? tab.url : ''),
+        },
+      });
+      go.textContent = started && started.ok ? 'เข้าคิวแล้ว' : 'ไม่สำเร็จ';
+      void refreshJobs();
+    });
+
+    row.append(tag, label, go);
     list.appendChild(row);
-  }
-
-  // ส่งทั้งหน้าให้แอปแกะเอง — ใช้ได้แม้ดักอะไรไม่เจอเลย
-  const row = document.createElement('li');
-  const name = document.createElement('span');
-  name.className = 'name';
-  name.textContent = 'ส่งทั้งหน้านี้ให้แอปแกะเอง';
-
-  const send = document.createElement('button');
-  send.className = 'ghost';
-  send.textContent = 'ส่ง';
-  send.addEventListener('click', () =>
-    sendOne({ url: tab.url, kind: 'page', height: 0 }, tab, send));
-
-  row.append(name, send);
-  list.appendChild(row);
-}
-
-async function sendOne(q, tab, button) {
-  button.disabled = true;
-  button.textContent = 'กำลังส่ง…';
-
-  const payload = {
-    url: q.url,
-    kind: q.kind,
-    height: q.height || 0,
-    title: (tab.title || '').slice(0, 150),
-    pageUrl: tab.url,
-    referer: tab.url,
-    headers: { Referer: tab.url },
-  };
-
-  let answer = await chrome.runtime.sendMessage({ type: 'send', payload });
-
-  if (!answer.ok && String(answer.reason || '').includes('จับคู่')) {
-    const paired = await chrome.runtime.sendMessage({ type: 'pair' });
-    if (paired.ok) answer = await chrome.runtime.sendMessage({ type: 'send', payload });
-  }
-
-  button.textContent = answer.ok ? 'ส่งแล้ว ✓' : 'ไม่สำเร็จ';
-  if (!answer.ok) {
-    setState('bad', answer.reason || 'ส่งไม่สำเร็จ');
-    button.disabled = false;
-    button.textContent = 'ลองใหม่';
   }
 }
 
@@ -128,7 +89,123 @@ function shortName(url) {
   }
 }
 
+// ---------- คิวงาน ----------
+
+const PHASE_TEXT = {
+  queued: 'รอคิว', starting: 'กำลังเริ่ม', downloading: 'กำลังโหลด',
+  converting: 'กำลังแปลง', remuxing: 'รวมเป็น mp4', saving: 'กำลังเซฟ',
+  done: 'เสร็จแล้ว', failed: 'ล้มเหลว', cancelled: 'ยกเลิกแล้ว',
+};
+
+async function refreshJobs() {
+  const answer = await ask({ type: 'jobs' });
+  const jobs = (answer && answer.jobs) || [];
+  const list = $('jobs');
+  list.textContent = '';
+  $('nojobs').hidden = jobs.length > 0;
+
+  for (const job of jobs.slice(0, 10)) {
+    const row = document.createElement('li');
+    row.className = 'job';
+
+    const top = document.createElement('div');
+    top.className = 'top';
+    top.appendChild(nameNode(job.filename || 'video.mp4'));
+
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    const mb = (job.bytes || 0) / 1048576;
+    tag.textContent = `${PHASE_TEXT[job.phase] || job.phase} · ${mb.toFixed(1)} MB`;
+    top.appendChild(tag);
+
+    if (['queued', 'starting', 'downloading', 'converting', 'remuxing'].includes(job.phase)) {
+      const stop = document.createElement('button');
+      stop.className = 'ghost small';
+      stop.textContent = 'หยุด';
+      stop.addEventListener('click', () => { void ask({ type: 'cancel', id: job.id }); });
+      top.appendChild(stop);
+    }
+
+    row.appendChild(top);
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    const fill = document.createElement('i');
+    const done = job.phase === 'done' ? 1
+      : job.segmentsTotal ? (job.segmentsDone || 0) / job.segmentsTotal
+      : ['converting', 'remuxing', 'saving'].includes(job.phase) ? 1 : 0;
+    fill.style.width = `${Math.round(done * 100)}%`;
+    bar.appendChild(fill);
+    row.appendChild(bar);
+
+    if (job.error) {
+      const why = document.createElement('div');
+      why.className = 'why';
+      why.textContent = job.error;
+      row.appendChild(why);
+    }
+
+    list.appendChild(row);
+  }
+}
+
+// ---------- บันทึก ----------
+
+let logText = '';
+
+async function refreshLog() {
+  const answer = await ask({ type: 'log' });
+  const rows = (answer && answer.rows) || [];
+
+  logText = rows.map((r) => {
+    const t = new Date(r.at).toLocaleTimeString('th-TH', { hour12: false });
+    const mark = r.level === 'error' ? '!' : r.level === 'warn' ? '?' : ' ';
+    return `${t} ${mark} ${r.text}`;
+  }).join('\n');
+
+  $('log').textContent = logText || 'ยังไม่มีบันทึก';
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+// ---------- เริ่ม ----------
+
 (async () => {
-  await refreshState();
-  await refreshList();
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  tabId = tab ? tab.id : -1;
+
+  $('page').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    const sent = await ask({ type: 'download-page', tabId });
+    setState(sent && sent.ok
+      ? `เข้าคิว ${sent.count} คลิป → โฟลเดอร์ ${sent.folder}`
+      : ((sent && sent.reason) || 'ทำไม่สำเร็จ'), sent && sent.ok ? 'ok' : 'bad');
+    e.target.disabled = false;
+    void refreshJobs();
+  });
+
+  $('savelog').addEventListener('click', async () => {
+    $('savelog').disabled = true;
+    const saved = await ask({ type: 'save-log' });
+    setState(saved && saved.ok
+      ? `เก็บบันทึกไว้ที่โฟลเดอร์ดาวน์โหลด: ${saved.filename}`
+      : `เก็บบันทึกไม่สำเร็จ: ${(saved && saved.reason) || '?'}`,
+    saved && saved.ok ? 'ok' : 'bad');
+    $('savelog').disabled = false;
+  });
+
+  $('copylog').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(logText).catch(() => {});
+    $('copylog').textContent = 'คัดลอกแล้ว';
+  });
+
+  $('clearlog').addEventListener('click', async () => {
+    await ask({ type: 'clear-log' });
+    void refreshLog();
+  });
+
+  await Promise.all([refreshList(), refreshJobs(), refreshLog()]);
+
+  // เมนูเปิดอยู่ก็อัปเดตเรื่อยๆ · ปิดเมนูแล้วหน้านี้ถูกทำลาย ตัวจับเวลาหายไปเอง
+  timer = setInterval(() => { void refreshJobs(); void refreshLog(); }, 900);
+  window.addEventListener('unload', () => clearInterval(timer));
 })();

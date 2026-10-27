@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>New Kewi Downloader — ตัวโหลดเบื้องหลัง</title>
+</head>
+<body>
+  <!--
+    หน้านี้ไม่มีใครเห็น มันมีไว้เพื่อสองอย่างที่ service worker ของ MV3 ทำไม่ได้:
+      1. สร้าง Worker ขึ้นมารัน ffmpeg wasm  (service worker สร้าง worker ซ้อนไม่ได้)
+      2. URL.createObjectURL ของไฟล์ที่เสร็จแล้ว (ไม่มีใน service worker)
+  -->
+  <script type="module" src="offscreen.js"></script>
+</body>
+</html>

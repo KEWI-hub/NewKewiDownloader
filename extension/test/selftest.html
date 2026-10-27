@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>New Kewi — เทสตัวโหลดในเบราว์เซอร์</title>
+  <style>
+    body { font: 13px/1.5 "Segoe UI", "Leelawadee UI", monospace; padding: 16px; }
+    pre { background: #f4f5f7; padding: 10px; border-radius: 6px; white-space: pre-wrap; }
+    .ok { color: #0b6a33; } .bad { color: #a1231f; }
+  </style>
+</head>
+<body>
+  <!--
+    หน้านี้มีไว้เทสของจริง ไม่ได้เป็นส่วนของการใช้งาน
+
+    ที่ต้องเทสจากหน้าในส่วนขยายเอง เพราะชั้นที่จะเทสใช้ของที่มีแต่ในนั้น:
+    OPFS · createSyncAccessHandle · fetch ข้ามโดเมนแบบมี cookie · WebAssembly
+    ซึ่งรันจาก node หรือจากหน้าเว็บธรรมดาไม่ได้เลย
+
+    เปิดด้วย test/run-selftest.mjs ซึ่งสั่ง Chromium พกพาให้มาเปิดหน้านี้แล้วอ่านผลผ่าน CDP
+  -->
+  <h1>เทสตัวโหลดในเบราว์เซอร์</h1>
+  <pre id="out">กำลังรัน…</pre>
+  <script type="module" src="selftest.js"></script>
+</body>
+</html>

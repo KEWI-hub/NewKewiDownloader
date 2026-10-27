@@ -25,3 +25,6 @@ publish/
 .idea/
 *.swp
 Thumbs.db
+
+# ผลของ node extension/build.mjs
+dist/

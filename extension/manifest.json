@@ -1,31 +1,33 @@
 {
   "manifest_version": 3,
   "name": "New Kewi Downloader",
-  "version": "1.0.0",
-  "description": "เจอวิดีโอบนหน้าเว็บแล้วกดส่งเข้า New Kewi Video Downloader ได้เลย เลือกความชัดได้ด้วย",
-
+  "version": "2.1.0",
+  "description": "เจอวิดีโอบนหน้าเว็บแล้วโหลดเป็น .mp4 ได้ในตัว เลือกความชัดได้ หรือส่งเข้าแอปให้โหลดทั้งหน้าเป็นโฟลเดอร์",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-
   "permissions": [
     "webRequest",
+    "declarativeNetRequest",
+    "offscreen",
+    "downloads",
     "storage",
+    "unlimitedStorage",
     "tabs"
   ],
-
   "host_permissions": [
-    "http://127.0.0.1/*",
     "http://*/*",
     "https://*/*"
   ],
-
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
-
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "New Kewi Downloader",
@@ -35,21 +37,32 @@
       "128": "icons/icon128.png"
     }
   },
-
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
-      "css": ["panel.css"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "panel.css"
+      ],
       "run_at": "document_idle",
       "all_frames": true
     }
   ],
-
   "web_accessible_resources": [
     {
-      "resources": ["icons/icon48.png"],
-      "matches": ["http://*/*", "https://*/*"]
+      "resources": [
+        "icons/icon48.png"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
     }
-  ]
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt6pusqHn6kQn5JVfQLNgBBP9qY/WjDIgc/QEcubdoSK4OseaOY7I/lnoKJ5kNoUziCSMzSU8gEQr3+JpiOEWZ45NiZ0K3ZmafB94cj6jW//ScuLL0qlP+MJUDJiSK0JOgYWDdJ2u60FKUMTZukJQ6cKmPRylCL9yDHho1bMafOXGzWd6jxTwoklkEkEV9MJ1yVQ2f3MaWmwkyjlWx4cy195CT+A8XwyxwqdTHCxtGxKVlwgHhmYijsGHgCV+bCdyXzmdt1kyUT4ew2pAjDZ5VZgTgOxq6W1etigQbhVw5Mf7q4lHstwZzrj6F5rxTlWru71W3xXIRBLb3Qa9z4IXnwIDAQAB"
 }

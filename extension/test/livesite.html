@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>New Kewi — เทสโหลดจากเว็บจริง</title>
+  <style>
+    body { font: 13px/1.6 "Segoe UI", "Leelawadee UI", monospace; padding: 16px; }
+    pre { background: #f4f5f7; padding: 10px; border-radius: 6px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <!--
+    เทสทั้งสายของจริง: เปิดเว็บจริงในแท็บ → ปล่อยให้ตัวดักทำงาน → สั่งโหลด → รอไฟล์ลงเครื่อง
+
+    ต้องเป็นหน้าในส่วนขยาย เพราะมีแต่ที่นี่ที่เรียก chrome.runtime.sendMessage
+    กับ chrome.tabs ได้ · เว็บที่จะลองส่งมาทาง #hash
+  -->
+  <h1>เทสโหลดจากเว็บจริง</h1>
+  <pre id="out">กำลังรัน…</pre>
+  <script type="module" src="livesite.js"></script>
+</body>
+</html>
