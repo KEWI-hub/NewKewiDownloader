@@ -14,6 +14,7 @@ using NewKewi.Core.Models;
 using NewKewi.Core.Processes;
 using NewKewi.Core.Queue;
 using NewKewi.Core.Settings;
+using NewKewi.Core.Tools;
 using NewKewi.Sites;
 using NewKewi.Sites.Browser;
 using WebClient = NewKewi.Sites.WebClient;
@@ -35,6 +36,7 @@ public partial class MainWindow : Window
     private readonly BridgeServer? _bridge;
     private readonly NamingRules _naming;
     private readonly GitHubClient _github = new();
+    private readonly HttpDownloader _downloader = new();
     private readonly DiagnosticReporter _reporter;
 
     public MainWindow()
@@ -108,8 +110,13 @@ public partial class MainWindow : Window
         };
 
         RefreshStatus();
-        WarnIfToolsMissing();
-        _ = SyncConfigsAsync();
+
+        // รอให้หน้าต่างขึ้นก่อนค่อยถาม ไม่งั้นกล่องข้อความจะเด้งมาก่อนตัวแอปเอง
+        Loaded += async (_, _) =>
+        {
+            await EnsureToolsAsync();
+            await SyncConfigsAsync();
+        };
     }
 
     /// <summary>
@@ -302,11 +309,65 @@ public partial class MainWindow : Window
         return found;
     }
 
-    private void WarnIfToolsMissing()
+    /// <summary>
+    /// ขาดเครื่องมือใน <c>bin/</c> ก็เสนอโหลดมาให้ · ทำแบบเดียวกับ Chromium
+    ///
+    /// ของพวกนี้ไม่ได้อยู่ใน repo เพราะใหญ่เกินไป และ yt-dlp ออกรุ่นใหม่แทบทุกสัปดาห์
+    /// ให้แอปโหลดเองแปลว่าได้รุ่นล่าสุดโดยไม่ต้องรอ release ของเรา
+    /// </summary>
+    private async Task EnsureToolsAsync()
     {
-        var missing = _paths.MissingTools();
+        var installer = new ToolInstaller(_paths, _downloader, new ProcessRunner());
+        var missing = installer.Missing();
         if (missing.Count == 0) return;
-        StatusText.Text = $"ขาดเครื่องมือใน bin\\: {string.Join(", ", missing)} — โหลดอะไรไม่ได้จนกว่าจะมีครบ";
+
+        var answer = MessageBox.Show(this,
+            $"ยังไม่มีเครื่องมือที่ต้องใช้: {string.Join(", ", missing)}\n\n" +
+            $"โหลดมาเลยไหม? ประมาณ {installer.ApproximateMegabytes()} MB ครั้งเดียวจบ\n" +
+            "(ไม่โหลดก็ใช้งานไม่ได้)",
+            "ต้องโหลดเครื่องมือก่อน", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes)
+        {
+            StatusText.Text = $"ขาดเครื่องมือใน bin\\: {string.Join(", ", missing)} — โหลดอะไรไม่ได้จนกว่าจะมีครบ";
+            return;
+        }
+
+        var report = new Progress<string>(m => StatusText.Text = m);
+        var result = await Task.Run(() => installer.EnsureAllAsync(report, CancellationToken.None));
+
+        StatusText.Text = result.Message;
+        if (result.Ok) RefreshStatus();
+    }
+
+    /// <summary>
+    /// ติดตั้ง Chromium พกพาตอนที่ต้องใช้จริง · คืน true เมื่อพร้อมใช้
+    /// เดิมมีแต่ข้อความบอกผู้ใช้ว่าแอปจะโหลดให้ แต่ไม่มีโค้ดไหนโหลดจริง
+    /// </summary>
+    private async Task<bool> EnsureBrowserAsync()
+    {
+        if (_browser.IsReady) return true;
+
+        var answer = MessageBox.Show(this,
+            "เว็บนี้ต้องใช้เบราว์เซอร์จริง แต่ยังไม่ได้ติดตั้ง Chromium พกพา\n\n" +
+            "โหลดมาเลยไหม? ประมาณ 150 MB ครั้งเดียวจบ\n" +
+            "(ใช้ profile ของแอปเอง ไม่เกี่ยวกับเบราว์เซอร์ที่คุณใช้อยู่)",
+            "ต้องโหลด Chromium ก่อน", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (answer != MessageBoxResult.Yes) return false;
+
+        var report = new Progress<string>(m => StatusText.Text = m);
+        try
+        {
+            await Task.Run(() => new ChromiumInstaller(_paths, _downloader)
+                .EnsureAsync(report, CancellationToken.None));
+            return _browser.IsReady;
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = "ติดตั้ง Chromium ไม่สำเร็จ: " + ex.Message.Split('\n')[0];
+            return false;
+        }
     }
 
     private void RefreshStatus()
@@ -411,14 +472,7 @@ public partial class MainWindow : Window
     /// </summary>
     private async void OnPassBotWall(object sender, RoutedEventArgs e)
     {
-        if (!_browser.IsReady)
-        {
-            MessageBox.Show(this,
-                "ยังไม่ได้ติดตั้ง Chromium พกพา — กด \"เพิ่มลิงก์\" แล้วลองโหลดสักครั้ง " +
-                "แอปจะโหลด Chromium มาให้เอง",
-                "ผ่านด่านเว็บ", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
+        if (!await EnsureBrowserAsync()) return;
 
         var seed = Selected().FirstOrDefault()?.SourceUrl ?? "";
         var dlg = new AddUrlWindow { Owner = this, Title = "เปิดเว็บเพื่อกดผ่านด่าน" };
@@ -473,6 +527,8 @@ public partial class MainWindow : Window
         _tick.Stop();
         _queue.Stop();
         _queue.Save();
+        _downloader.Dispose();
+        _github.Dispose();
         _bridge?.Dispose();   // ปล่อยพอร์ตคืน ไม่งั้นเปิดแอปใหม่จะรับลิงก์จากเบราว์เซอร์ไม่ได้
         _tray.Dispose();      // ไม่ทำแล้วจะเหลือไอคอนผีค้างในถาดระบบ
         base.OnClosing(e);

@@ -70,38 +70,14 @@ jobs:
             --output publish
           Get-ChildItem publish/NewKewiDownloader.exe | Select-Object Name, Length
 
-      # เครื่องมือภายนอกไม่ได้อยู่ใน repo (ใหญ่เกินไป) โหลดจากต้นทางทางการตอน build
-      - name: Fetch yt-dlp, ffmpeg and aria2c
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force pack/NewKewiDownloader/bin | Out-Null
-          $bin = 'pack/NewKewiDownloader/bin'
-
-          Invoke-WebRequest `
-            -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' `
-            -OutFile "$bin/yt-dlp.exe"
-
-          Invoke-WebRequest `
-            -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' `
-            -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-extract
-          Get-ChildItem ffmpeg-extract -Recurse -Include ffmpeg.exe, ffprobe.exe |
-            ForEach-Object { Copy-Item $_.FullName $bin }
-
-          Invoke-WebRequest `
-            -Uri 'https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip' `
-            -OutFile aria2.zip
-          Expand-Archive aria2.zip -DestinationPath aria2-extract
-          Get-ChildItem aria2-extract -Recurse -Filter aria2c.exe |
-            Select-Object -First 1 |
-            ForEach-Object { Copy-Item $_.FullName $bin }
-
-          Get-ChildItem $bin | Select-Object Name, Length
-
+      # ไม่แนบ yt-dlp / ffmpeg / aria2c มาใน zip แล้ว · แอปโหลดเองตอนเปิดครั้งแรก
+      # ได้สองอย่าง: zip เล็กลงจาก 210 MB เหลือราว 70 MB
+      # และผู้ใช้ได้ yt-dlp รุ่นล่าสุดเสมอ ไม่ใช่รุ่นที่ค้างอยู่ตั้งแต่วันที่ออก release
       - name: Assemble the portable folder
         shell: pwsh
         run: |
           $root = 'pack/NewKewiDownloader'
+          New-Item -ItemType Directory -Force $root | Out-Null
           Copy-Item publish/NewKewiDownloader.exe $root
           Copy-Item README.md $root
           Copy-Item -Recurse modules   $root
@@ -116,7 +92,15 @@ jobs:
           วิธีใช้
           -------
           1. ดับเบิลคลิก NewKewiDownloader.exe ได้เลย ไม่ต้องติดตั้ง
-          2. กด "เพิ่มลิงก์" แล้ววางลิงก์วิดีโอ
+          2. ครั้งแรกแอปจะถามว่าขอโหลดเครื่องมือที่ต้องใช้ไหม (yt-dlp, ffmpeg, aria2c
+             ประมาณ 106 MB) กดตกลง แล้วรอสักครู่ ครั้งเดียวจบ
+          3. กด "เพิ่มลิงก์" แล้ววางลิงก์วิดีโอ
+
+          ทำไมไม่แนบเครื่องมือมาให้เลย
+          ----------------------------
+          yt-dlp ออกรุ่นใหม่แทบทุกสัปดาห์เพราะเว็บเปลี่ยนตลอด
+          ให้แอปโหลดเองแปลว่าคุณได้รุ่นล่าสุดเสมอ ไม่ใช่รุ่นที่ค้างอยู่ตั้งแต่วันที่ออก release นี้
+          ถ้าอยากเอาของเดิมมาใช้ ก๊อปไฟล์ลงโฟลเดอร์ bin\ เองได้ แอปจะไม่โหลดซ้ำ
 
           ส่วนขยายเบราว์เซอร์ (ปุ่มโหลดลอยเหนือวิดีโอ)
           ---------------------------------------------
@@ -176,8 +160,12 @@ jobs:
 
           | ไฟล์ | ใช้เมื่อไหร่ |
           |---|---|
-          | ``NewKewiDownloader-${{ steps.version.outputs.tag }}-win-x64.zip`` | **เอาอันนี้** ชุดเต็มพร้อมใช้ มี yt-dlp / ffmpeg / aria2c และส่วนขยายมาให้แล้ว |
-          | ``NewKewiDownloader.exe`` | เฉพาะตัวแอป สำหรับคนที่มีเครื่องมือใน ``bin\`` อยู่แล้ว |
+          | ``NewKewiDownloader-${{ steps.version.outputs.tag }}-win-x64.zip`` | **เอาอันนี้** มีตัวแอป config ของเว็บ และส่วนขยายเบราว์เซอร์ |
+          | ``NewKewiDownloader.exe`` | เฉพาะตัวแอป สำหรับคนที่มีของพวกนั้นอยู่แล้ว |
+
+          ครั้งแรกที่เปิด แอปจะถามขอโหลด yt-dlp / ffmpeg / aria2c (~106 MB) ให้เอง
+          ทำแบบนี้เพราะ yt-dlp ออกรุ่นใหม่แทบทุกสัปดาห์ตามที่เว็บเปลี่ยน
+          แนบมาในไฟล์ก็จะได้รุ่นที่ค้างอยู่ตั้งแต่วันที่ออก release
 
           ไม่ต้องติดตั้ง .NET แยก ตัว exe รวมมาให้แล้ว
 

@@ -6,4 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!--
+      เปิดให้เทสเห็นของ internal · ตัวช่วยอย่าง ToolInstaller.Extract เป็นรายละเอียดภายใน
+      ที่ควรเทสตรงๆ แต่ไม่ควรดันขึ้นมาเป็น public แค่เพราะอยากเทส
+    -->
+    <InternalsVisibleTo Include="NewKewi.Tests" />
+  </ItemGroup>
+
 </Project>

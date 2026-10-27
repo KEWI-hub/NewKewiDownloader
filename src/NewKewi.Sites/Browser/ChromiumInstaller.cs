@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using NewKewi.Core;
+using NewKewi.Core.Tools;
 
 namespace NewKewi.Sites.Browser;
 
@@ -10,8 +11,12 @@ namespace NewKewi.Sites.Browser;
 /// ทำไมต้องพกพา: จะได้ไม่พึ่งเบราว์เซอร์ที่ผู้ใช้ติดตั้งไว้ และที่สำคัญกว่าคือ
 /// **ไม่ไปแตะ profile หรือ cookie จริงของเขาเลย** แอปมี profile ของตัวเองใน <c>_profile/</c>
 /// </summary>
-public sealed class ChromiumInstaller(AppPaths paths)
+public sealed class ChromiumInstaller(AppPaths paths, IDownloader? downloader = null)
 {
+    // ใช้ตัวโหลดไฟล์ตัวเดียวกับที่ ToolInstaller ใช้ · จะได้มีที่เดียวที่รู้เรื่อง
+    // ไฟล์ครึ่งๆ, การรายงานความคืบหน้า และการกู้คืนเมื่อโหลดค้าง
+    private readonly IDownloader _downloader = downloader ?? new HttpDownloader();
+
     private const string VersionsUrl =
         "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json";
 
@@ -31,7 +36,13 @@ public sealed class ChromiumInstaller(AppPaths paths)
         var zipPath = Path.Combine(paths.Temp, "chromium.zip");
 
         progress?.Report("กำลังโหลด Chromium (ประมาณ 150 MB) ครั้งเดียวจบ");
-        await DownloadAsync(zipUrl, zipPath, progress, ct).ConfigureAwait(false);
+        var downloaded = await _downloader
+            .GetFileAsync(zipUrl, zipPath,
+                new Progress<string>(p => progress?.Report($"กำลังโหลด Chromium {p}")), ct)
+            .ConfigureAwait(false);
+
+        if (!downloaded)
+            throw new InvalidOperationException("โหลดไฟล์ Chromium ไม่สำเร็จ");
 
         progress?.Report("กำลังแตกไฟล์");
         // แตกลงที่ชั่วคราวก่อนแล้วค่อยย้าย — โหลดค้างกลางทางจะได้ไม่เหลือ _chromium ที่ใช้ไม่ได้
@@ -75,37 +86,6 @@ public sealed class ChromiumInstaller(AppPaths paths)
                 return u.GetString();
         }
         return null;
-    }
-
-    private static async Task DownloadAsync(
-        string url, string target, IProgress<string>? progress, CancellationToken ct)
-    {
-        using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
-        using var res = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)
-            .ConfigureAwait(false);
-        res.EnsureSuccessStatusCode();
-
-        var total = res.Content.Headers.ContentLength ?? 0;
-        await using var src = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        await using var dst = File.Create(target);
-
-        var buffer = new byte[256 * 1024];
-        long done = 0;
-        var lastReport = 0;
-        int read;
-        while ((read = await src.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
-        {
-            await dst.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
-            done += read;
-
-            if (total <= 0) continue;
-            var percent = (int)(done * 100 / total);
-            if (percent >= lastReport + 5)
-            {
-                lastReport = percent;
-                progress?.Report($"กำลังโหลด Chromium {percent}%");
-            }
-        }
     }
 
     private static void TryDelete(string path)
