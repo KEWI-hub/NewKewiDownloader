@@ -5,6 +5,41 @@
 
 const worker = new Worker('download/worker.js', { type: 'module' });
 
+/**
+ * สายตรงไปหา service worker
+ *
+ * **ห้ามใช้ `chrome.runtime.sendMessage` แบบยิงทิ้งกับข้อความของงาน** · service worker
+ * ของ MV3 ถูกปิดเองเมื่อไม่มีใครคุยด้วย ถ้ามันหลับหรือกำลังรีสตาร์ทตอนข้อความวิ่งมาถึง
+ * ข้อความนั้น **หายไปเฉยๆ** แล้วงานจะค้างที่ขั้นแรกตลอดกาลโดยไม่มี error ให้เห็นเลย
+ *
+ * อาการนี้โผล่เฉพาะตอนใช้งานจริง (ผู้ใช้กดโหลดแล้วปิดเมนู) ส่วนตอนเทสไม่โผล่
+ * เพราะหน้าเทสถามสถานะทุกวินาที ซึ่งทำให้ service worker ไม่เคยได้หลับ
+ *
+ * สายที่เปิดค้างไว้แก้ได้ทั้งสองอย่าง: ข้อความไม่หาย และตัว service worker
+ * ถูกยืดอายุไว้ตราบที่สายยังเปิด
+ */
+let port = null;
+
+function wire() {
+  port = chrome.runtime.connect({ name: 'newkewi-jobs' });
+  port.onDisconnect.addListener(() => { port = null; });
+}
+
+function tell(message) {
+  try {
+    if (!port) wire();
+    port.postMessage(message);
+  } catch (err) {
+    // สายขาดระหว่างทาง — ต่อใหม่แล้วส่งซ้ำครั้งเดียว ถ้ายังไม่ได้ก็ปล่อย
+    try {
+      wire();
+      port.postMessage(message);
+    } catch (again) { /* service worker ไปแล้วจริงๆ */ }
+  }
+}
+
+wire();
+
 /** blob URL ที่ยังถือไว้รอ chrome.downloads ดูดไฟล์ไป · ปล่อยเร็วเกินไฟล์จะหาย */
 const held = new Map();   // jobId -> blob URL
 
@@ -18,17 +53,18 @@ worker.onmessage = (event) => {
     return;
   }
 
-  tell({ type: `job-${msg.type}`, ...msg });
+  // ชื่อชนิดต้องอยู่ **หลัง** การกระจายค่า ไม่ใช่ก่อน
+  //
+  // เขียน `{ type: \`job-${msg.type}\`, ...msg }` แล้ว `...msg` จะเอา type เดิมมาทับกลับ
+  // ข้อความ state/progress/log ทั้งหมดเลยวิ่งไปด้วยชื่อผิดแล้วถูกทิ้ง ผลคือแถบความคืบหน้า
+  // ค้างที่ "กำลังเริ่ม 0.0 MB" ตลอดทั้งที่งานโหลดอยู่จริงและเสร็จได้ด้วย
+  tell({ ...msg, type: `job-${msg.type}` });
 };
 
 worker.onerror = (event) => {
   tell({ type: 'job-failed', id: 'unknown', error: `worker พัง: ${event.message}` });
 };
 
-function tell(message) {
-  // service worker อาจหลับอยู่ตอนเราส่ง — มันจะถูกปลุกให้มารับเอง ถ้าพลาดก็ไม่มีใครรับ
-  chrome.runtime.sendMessage(message).catch(() => {});
-}
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   switch (msg.type) {

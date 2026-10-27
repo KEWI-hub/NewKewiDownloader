@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>New Kewi — เทสคิวจริงผ่านหน้า offscreen</title>
+  <style>
+    body { font: 13px/1.6 "Segoe UI", "Leelawadee UI", monospace; padding: 16px; }
+    pre { background: #f4f5f7; padding: 10px; border-radius: 6px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <!--
+    เทสทางที่ผู้ใช้เดินจริง: สั่งผ่าน chrome.runtime.sendMessage เข้า background →
+    background สร้างหน้า offscreen → offscreen สร้าง worker → worker โหลด
+
+    ต่างจาก selftest.html ซึ่งสร้าง worker เองตรงๆ · ทางผ่าน offscreen มีรอยต่อ
+    ที่ selftest มองไม่เห็นเลย และนั่นคือที่ที่งานของผู้ใช้ไปค้างอยู่
+  -->
+  <h1>เทสคิวผ่านหน้า offscreen</h1>
+  <pre id="out">กำลังรัน…</pre>
+  <script type="module" src="queue.js"></script>
+</body>
+</html>

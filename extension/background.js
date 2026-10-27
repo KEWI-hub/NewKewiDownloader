@@ -7,6 +7,18 @@
 // ของที่ต้องอยู่ข้ามการปิด-เปิดจึงเก็บใน chrome.storage
 
 const MEDIA_PATTERN = /\.(m3u8|mpd|mp4|webm|mkv|m4v)(\?|#|$)/i;
+
+/**
+ * ชิ้นส่วนของสตรีม ไม่ใช่ตัววิดีโอ
+ *
+ * ต้องกันไว้**ทุกทางที่ดักได้** ไม่ใช่แค่ทางเดียว · ชิ้นส่วนของ HLS เป็น MPEG-TS
+ * ซึ่ง Content-Type คือ `video/mp2t` จึงผ่านด่าน "ขึ้นต้นด้วย video/" ไปได้สบาย
+ * พอ segment ไหลมาเป็นร้อยมันจะดันตัว playlist จริงตกขอบรายการไป แล้วผู้ใช้
+ * จะเห็นแต่ `seg-21-v1-a1.ts` เต็มเมนูโดยไม่มีคลิปให้โหลดเลย
+ *
+ * ชื่อไฟล์แบบ `seg-12-v1-a1` กับ `chunk_1.m4s` ก็เป็นชิ้นส่วน แม้นามสกุลจะเป็น .mp4
+ */
+const SEGMENT_PATTERN = /(\.(ts|m4s|aac|cmfv|cmfa)(\?|#|$))|(\/(seg|chunk|frag|segment)[-_]?\d+)/i;
 const OFFSCREEN = 'offscreen.html';
 
 /** โหลดพร้อมกันได้กี่คลิป · แต่ละคลิปยังดึง segment ขนานหลายช่องของตัวเองอีกชั้น */
@@ -24,12 +36,27 @@ const LOG_KEY = 'log';
 const LOG_MAX = 2000;
 const SECRET_HEADERS = ['cookie', 'authorization', 'set-cookie', 'x-csrf-token'];
 
-async function note(level, text, jobId) {
-  const bag = await chrome.storage.local.get(LOG_KEY);
-  const rows = bag[LOG_KEY] || [];
-  rows.push({ at: Date.now(), level, text, jobId: jobId || null });
-  while (rows.length > LOG_MAX) rows.shift();
-  await chrome.storage.local.set({ [LOG_KEY]: rows });
+/**
+ * คิวเขียนบันทึก
+ *
+ * การเขียนคือ อ่าน → ต่อท้าย → เขียนกลับ · ถ้าปล่อยให้หลายสายทำพร้อมกัน
+ * ตัวที่เขียนทีหลังจะทับของตัวที่เขียนก่อนด้วยสำเนาเก่าที่มันอ่านมา **บรรทัดหายเงียบๆ**
+ *
+ * เคยทำให้บรรทัดบอกขั้นของงานหายไปจากบันทึกทั้งที่งานเดินครบทุกขั้นจริง
+ * ซึ่งแย่กว่าไม่มีบันทึกเลย เพราะเราใช้มันตัดสินว่าโปรแกรมพังตรงไหน
+ */
+let logChain = Promise.resolve();
+
+function note(level, text, jobId) {
+  logChain = logChain.then(async () => {
+    const bag = await chrome.storage.local.get(LOG_KEY);
+    const rows = bag[LOG_KEY] || [];
+    rows.push({ at: Date.now(), level, text, jobId: jobId || null });
+    while (rows.length > LOG_MAX) rows.shift();
+    await chrome.storage.local.set({ [LOG_KEY]: rows });
+  }).catch(() => { /* เขียนบันทึกพลาดต้องไม่ทำให้งานจริงล้ม */ });
+
+  return logChain;
 }
 
 const info = (text, jobId) => note('info', text, jobId);
@@ -234,7 +261,7 @@ chrome.webRequest.onBeforeRequest.addListener(
     if (!url.startsWith('http')) return;
 
     // ชิ้นส่วนของ playlist ไม่ต้องเก็บ เราสนใจตัว playlist กับไฟล์เต็มเท่านั้น
-    if (/\.(ts|m4s|aac)(\?|#|$)/i.test(url)) return;
+    if (SEGMENT_PATTERN.test(url)) return;
     if (!MEDIA_PATTERN.test(url)) return;
 
     void remember(details.tabId, url, kindOf(url));
@@ -246,6 +273,11 @@ chrome.webRequest.onBeforeRequest.addListener(
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
     if (details.tabId < 0) return;
+
+    // ด่านนี้เคยไม่มีตัวกรองชิ้นส่วน · ชิ้นส่วน HLS เป็น MPEG-TS ซึ่ง Content-Type
+    // คือ `video/mp2t` จึงผ่านเงื่อนไข "ขึ้นต้นด้วย video/" เข้ามาเป็นร้อย
+    // แล้วดันตัว playlist จริงตกขอบรายการจนผู้ใช้ไม่มีอะไรให้กดโหลดเลย
+    if (SEGMENT_PATTERN.test(details.url)) return;
 
     const header = (details.responseHeaders || [])
       .find((h) => h.name.toLowerCase() === 'content-type');
@@ -348,9 +380,17 @@ const bestFirst = (a, b) =>
 
 async function qualitiesFor(tabId) {
   const data = await readTab(tabId);
-  // เอาตัวล่าสุดก่อน — คลิปที่ผู้ใช้กำลังดูมักเป็นอันหลังสุดที่โหลดมา
-  const newest = data.items.slice().reverse().slice(0, 6);
-  const groups = await Promise.all(newest.map(expandQualities));
+
+  // playlist มาก่อนไฟล์เดี่ยวเสมอ แล้วค่อยเอาตัวล่าสุดก่อน
+  //
+  // ถ้าเรียงตามเวลาอย่างเดียวแล้วตัดเอาไม่กี่ตัวแรก ตัว playlist จะหลุดรายการไป
+  // เมื่อมีอะไรมาทีหลังเยอะๆ — ผู้ใช้เปิดเมนูมาแล้วไม่มีอะไรให้กดโหลดเลย
+  // ทั้งที่โปรแกรมดักเจอคลิปตั้งแต่แรก
+  const ordered = data.items.slice().reverse()
+    .sort((a, b) => (a.kind === 'file') - (b.kind === 'file'))
+    .slice(0, 8);
+
+  const groups = await Promise.all(ordered.map(expandQualities));
   return { qualities: groups.flat().sort(bestFirst), pageUrl: data.pageUrl };
 }
 
@@ -457,8 +497,43 @@ async function enqueue(payload) {
   return { ok: true, id, filename };
 }
 
+/** นานแค่ไหนที่ไม่ได้ข่าวจากตัวโหลดเลย ถึงจะถือว่างานตายไปแล้ว */
+const SILENCE_LIMIT = 90000;
+
+/**
+ * งานที่เงียบหายไปเฉยๆ ต้องถูกประกาศว่าล้มเหลว
+ *
+ * ไม่งั้นมันค้างอยู่ในคิวตลอดกาลและกินช่องว่างของงานอื่นไปด้วย · ที่สำคัญกว่าคือ
+ * ผู้ใช้เห็นแค่ "กำลังเริ่ม 0.0 MB" ไปเรื่อยๆ โดยไม่มีอะไรบอกว่าเกิดอะไรขึ้น
+ */
+async function sweepStuck() {
+  const jobs = await allJobs();
+  const now = Date.now();
+  let changed = false;
+
+  for (const job of Object.values(jobs)) {
+    if (!['starting', 'downloading', 'converting', 'remuxing'].includes(job.phase)) continue;
+
+    const last = job.heardAt || job.startedAt || job.queuedAt || now;
+    if (now - last < SILENCE_LIMIT) continue;
+
+    jobs[job.id] = {
+      ...job,
+      phase: 'failed',
+      error: `ตัวโหลดเงียบไป ${Math.round((now - last) / 1000)} วินาที — ถือว่าล้มเหลว`,
+    };
+    changed = true;
+    await fail(jobs[job.id].error, job.id);
+    await release(job.id, false);
+  }
+
+  if (changed) await chrome.storage.session.set({ [JOBS_KEY]: jobs });
+  return changed;
+}
+
 /** เริ่มงานที่รออยู่เท่าที่ยังมีช่องว่าง */
 async function pump() {
+  await sweepStuck();
   const jobs = await allJobs();
   const list = Object.values(jobs);
 
@@ -476,7 +551,7 @@ async function pump() {
 
 async function launch(job) {
   try {
-    await patchJob(job.id, { phase: 'starting', startedAt: Date.now() });
+    await patchJob(job.id, { phase: 'starting', startedAt: Date.now(), heardAt: Date.now() });
     await ensureOffscreen();
 
     let host = '';
@@ -658,54 +733,74 @@ async function saveLogFile(why) {
 
 // ---------- รับคำสั่ง ----------
 
+/**
+ * สายที่หน้า offscreen เปิดค้างไว้
+ *
+ * ข้อความของงานต้องมาทางนี้ ไม่ใช่ `sendMessage` แบบยิงทิ้ง — ดูเหตุผลเต็มๆ ใน offscreen.js
+ * สรุปสั้นๆ: service worker หลับได้ตลอด แล้วข้อความแบบยิงทิ้งจะหายเงียบ งานค้างตลอดกาล
+ */
+chrome.runtime.onConnect.addListener((channel) => {
+  if (channel.name !== 'newkewi-jobs') return;
+  channel.onMessage.addListener((msg) => { void handleJobMessage(msg); });
+});
+
+/** ข้อความที่มาจากตัวโหลด · ไม่ต้องตอบกลับ */
+async function handleJobMessage(msg) {
+  switch (msg.type) {
+    case 'job-state':
+    case 'job-progress': {
+      const jobs = await allJobs();
+      const job = jobs[msg.id];
+      if (!job) return;
+
+      const next = { ...job };
+      if (msg.phase) next.phase = msg.phase;
+      if (msg.bytes) next.bytes = (job.bytes || 0) + msg.bytes;
+      if (msg.segmentsDone) next.segmentsDone = msg.segmentsDone;
+      if (msg.segmentsTotal) next.segmentsTotal = msg.segmentsTotal;
+      if (msg.duration) next.duration = msg.duration;
+      next.heardAt = Date.now();
+      jobs[msg.id] = next;
+      await chrome.storage.session.set({ [JOBS_KEY]: jobs });
+
+      if (msg.phase && msg.phase !== job.phase) await info(`ขั้น: ${msg.phase}`, msg.id);
+      return;
+    }
+
+    case 'job-log':
+      await info(msg.text, msg.id);
+      return;
+
+    case 'job-hosts':
+      await widenRules(msg.id, msg.hosts || []);
+      await chrome.runtime.sendMessage({ type: 'offscreen-hosts-ready', id: msg.id }).catch(() => {});
+      return;
+
+    case 'job-done':
+      await saveFinished(msg);
+      return;
+
+    case 'job-failed':
+      await patchJob(msg.id, { phase: msg.cancelled ? 'cancelled' : 'failed', error: msg.error });
+      await note(msg.cancelled ? 'info' : 'error', msg.error, msg.id);
+      await release(msg.id, false);
+      // เก็บบันทึกไว้เองทันทีที่พัง ผู้ใช้ไม่ต้องจำว่าต้องกดอะไร
+      if (!msg.cancelled) await saveLogFile('งานล้มเหลว');
+      await pump();
+      return;
+
+    default:
+      await warn(`ข้อความที่ไม่รู้จักจากตัวโหลด: ${msg.type}`);
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   (async () => {
     const tabId = msg.tabId ?? sender.tab?.id ?? -1;
 
     switch (msg.type) {
-      // ----- จากหน้า offscreen -----
-      case 'job-state':
-      case 'job-progress': {
-        const jobs = await allJobs();
-        const job = jobs[msg.id];
-        if (!job) break;
+      // ข้อความของงานมาทางสายที่เปิดค้าง (onConnect) ไม่ใช่ทางนี้
 
-        const next = { ...job };
-        if (msg.phase) next.phase = msg.phase;
-        if (msg.bytes) next.bytes = (job.bytes || 0) + msg.bytes;
-        if (msg.segmentsDone) next.segmentsDone = msg.segmentsDone;
-        if (msg.segmentsTotal) next.segmentsTotal = msg.segmentsTotal;
-        if (msg.duration) next.duration = msg.duration;
-        jobs[msg.id] = next;
-        await chrome.storage.session.set({ [JOBS_KEY]: jobs });
-
-        if (msg.phase && msg.phase !== job.phase) await info(`ขั้น: ${msg.phase}`, msg.id);
-        break;
-      }
-
-      case 'job-log':
-        await info(msg.text, msg.id);
-        break;
-
-      case 'job-hosts':
-        await widenRules(msg.id, msg.hosts || []);
-        await chrome.runtime.sendMessage({ type: 'offscreen-hosts-ready', id: msg.id }).catch(() => {});
-        break;
-
-      case 'job-done':
-        await saveFinished(msg);
-        break;
-
-      case 'job-failed':
-        await patchJob(msg.id, { phase: msg.cancelled ? 'cancelled' : 'failed', error: msg.error });
-        await note(msg.cancelled ? 'info' : 'error', msg.error, msg.id);
-        await release(msg.id, false);
-        // เก็บบันทึกไว้เองทันทีที่พัง ผู้ใช้ไม่ต้องจำว่าต้องกดอะไร
-        if (!msg.cancelled) await saveLogFile('งานล้มเหลว');
-        await pump();
-        break;
-
-      // ----- จากแผงและเมนู -----
       case 'filename':
         reply({ filename: mp4NameFrom(msg.title, msg.pageUrl) });
         return;
@@ -733,6 +828,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         return;
 
       case 'jobs':
+        await sweepStuck();
         reply({
           jobs: Object.values(await allJobs())
             .sort((a, b) => (b.queuedAt || 0) - (a.queuedAt || 0)),

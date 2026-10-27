@@ -193,6 +193,69 @@ export async function ourExtensionId(dir = extensionDir) {
   return [...digest].map((c) => String.fromCharCode(97 + parseInt(c, 16))).join('');
 }
 
+/**
+ * ฟังเสียงจาก **ทุกเป้าหมาย** ในเบราว์เซอร์ ไม่ใช่แค่หน้าที่เราเปิด
+ *
+ * จำเป็นเพราะความผิดพลาดที่ทำให้งานค้างเกิดในหน้า offscreen กับใน worker ซึ่ง
+ * เราไม่ได้ต่อสายไปหา · อาการที่เห็นคือ "งานค้างที่ขั้น starting โดยไม่มี error เลย"
+ * ซึ่งไล่ต่อไม่ได้เลยถ้าไม่เปิดหูตรงนี้
+ *
+ * เกาะที่สายระดับเบราว์เซอร์แล้วให้มันผูกเป้าหมายใหม่ให้อัตโนมัติ
+ */
+export async function watchAllTargets(port) {
+  const noise = [];
+  let version;
+  try {
+    version = await fetch(`http://127.0.0.1:${port}/json/version`).then((r) => r.json());
+  } catch (e) {
+    return { noise, stop() {} };
+  }
+
+  const socket = new WebSocket(version.webSocketDebuggerUrl);
+  await new Promise((resolve, reject) => {
+    socket.onopen = resolve;
+    socket.onerror = () => reject(new Error('ต่อสายระดับเบราว์เซอร์ไม่ได้'));
+  }).catch(() => {});
+
+  let seq = 0;
+  const names = new Map();   // sessionId -> ชื่อเป้าหมายที่คนอ่านรู้เรื่อง
+  const send = (method, params, sessionId) =>
+    socket.send(JSON.stringify({ id: ++seq, method, params, sessionId }));
+
+  socket.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.method === 'Target.attachedToTarget') {
+      const { sessionId, targetInfo } = msg.params;
+      const where = `${targetInfo.type}:${(targetInfo.url || '').split('/').pop() || targetInfo.url}`;
+      names.set(sessionId, where);
+      send('Runtime.enable', {}, sessionId);
+      send('Log.enable', {}, sessionId);
+      return;
+    }
+
+    const where = names.get(msg.sessionId) || '?';
+
+    if (msg.method === 'Runtime.exceptionThrown') {
+      const d = msg.params.exceptionDetails;
+      noise.push(`[${where}] ผิดพลาด: ${d.exception?.description || d.text}`);
+    } else if (msg.method === 'Runtime.consoleAPICalled') {
+      const text = msg.params.args.map((a) => a.value ?? a.description ?? '').join(' ');
+      noise.push(`[${where}] ${msg.params.type}: ${text}`);
+    } else if (msg.method === 'Log.entryAdded') {
+      noise.push(`[${where}] ${msg.params.entry.level}: ${msg.params.entry.text}`);
+    }
+  };
+
+  send('Target.setDiscoverTargets', { discover: true });
+  send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
+
+  return {
+    noise,
+    stop() { try { socket.close(); } catch (e) { /* ปิดไปแล้ว */ } },
+  };
+}
+
 /** สั่งเบราว์เซอร์ที่ยังตอบอยู่บนพอร์ตนี้ให้ปิดตัวเอง · ไม่มีใครตอบก็ถือว่าเรียบร้อย */
 async function closeStaleBrowser(port) {
   let version;
