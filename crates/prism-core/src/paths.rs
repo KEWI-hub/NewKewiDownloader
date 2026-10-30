@@ -1,4 +1,4 @@
-//! Well-known locations of Prism's per-user data.
+//! Well-known locations of New Kewi Downloader's per-user data.
 //!
 //! The layout must stay in sync with `prism-native-host`, which reads `ipc.json`
 //! from the same directory to find the running app.
@@ -6,13 +6,13 @@
 use std::path::PathBuf;
 
 /// Environment variable that overrides the data directory (tests, portable mode).
-pub const DATA_DIR_ENV: &str = "PRISM_DATA_DIR";
+pub const DATA_DIR_ENV: &str = "NEWKEWI_DATA_DIR";
 
 /// Per-user application data directory.
 ///
 /// * Windows: `%APPDATA%\Prism`
-/// * Linux:   `$XDG_DATA_HOME/prism` (default `~/.local/share/prism`)
-/// * macOS:   `~/Library/Application Support/Prism`
+/// * Linux:   `$XDG_DATA_HOME/newkewi` (default `~/.local/share/newkewi`)
+/// * macOS:   `~/Library/Application Support/NewKewi`
 ///
 /// A `portable.txt` file next to the executable switches to `<exe dir>/data`.
 pub fn data_dir() -> PathBuf {
@@ -24,9 +24,9 @@ pub fn data_dir() -> PathBuf {
     }
     let base = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
     if cfg!(target_os = "linux") {
-        base.join("prism")
+        base.join("newkewi")
     } else {
-        base.join("Prism")
+        base.join("NewKewi")
     }
 }
 
@@ -37,7 +37,7 @@ fn portable_dir() -> Option<PathBuf> {
 }
 
 pub fn database_path() -> PathBuf {
-    data_dir().join("prism.db")
+    data_dir().join("newkewi.db")
 }
 
 pub fn ipc_file() -> PathBuf {
@@ -53,7 +53,7 @@ pub fn tools_dir() -> PathBuf {
     data_dir().join("tools")
 }
 
-/// Default folder for finished downloads (`~/Downloads/Prism` style is avoided:
+/// Default folder for finished downloads (`~/Downloads/NewKewi` style is avoided:
 /// IDM users expect category sub-folders directly under Downloads).
 pub fn default_download_dir() -> PathBuf {
     dirs::download_dir()

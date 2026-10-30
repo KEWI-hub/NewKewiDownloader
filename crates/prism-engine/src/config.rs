@@ -40,7 +40,7 @@ pub struct EngineConfig {
     pub read_timeout: Duration,
     /// Consecutive failures without progress before a connection gives up (default 10).
     pub max_retries: u32,
-    /// Suffix of in-progress files (default `.prismpart`).
+    /// Suffix of in-progress files (default `.kewipart`).
     pub temp_suffix: String,
     /// Proxy used when a request does not specify one (default: system proxy).
     pub default_proxy: ProxyConfig,
@@ -67,7 +67,7 @@ impl Default for EngineConfig {
             connect_timeout: Duration::from_secs(15),
             read_timeout: Duration::from_secs(30),
             max_retries: 10,
-            temp_suffix: ".prismpart".into(),
+            temp_suffix: ".kewipart".into(),
             default_proxy: ProxyConfig::System,
             max_connections_per_host: None,
             host_limit_ttl: Duration::from_secs(24 * 3600),
@@ -88,7 +88,7 @@ impl EngineConfig {
         self.write_buffer = self.write_buffer.clamp(16 * 1024, 64 << 20);
         self.memory_budget = self.memory_budget.clamp(4 << 20, 1 << 30);
         if self.temp_suffix.is_empty() {
-            self.temp_suffix = ".prismpart".into();
+            self.temp_suffix = ".kewipart".into();
         }
         self
     }

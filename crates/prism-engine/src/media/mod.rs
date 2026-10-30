@@ -3,7 +3,7 @@
 //! A manifest is resolved into a [`MediaPlan`]: one or two tracks (video/muxed + optional
 //! separate audio), each a list of media segments (with optional byte ranges, AES-128 keys
 //! and initialization sections). Segments are fetched by N parallel workers into a work
-//! directory (`<final>.prismpart.d/`), each written, fsynced and renamed on completion — so
+//! directory (`<final>.kewipart.d/`), each written, fsynced and renamed on completion — so
 //! resuming simply skips completed segments. At the end every track is concatenated and
 //! (when ffmpeg is available and remuxing is enabled) muxed into the final `.mp4`.
 
@@ -1037,13 +1037,13 @@ mod tests {
     fn work_dir_claiming() {
         let dir = tempfile::tempdir().unwrap();
         let (f1, w1) =
-            claim_work_dir(dir.path(), "v.mp4", ".prismpart", ConflictPolicy::Rename).unwrap();
+            claim_work_dir(dir.path(), "v.mp4", ".kewipart", ConflictPolicy::Rename).unwrap();
         assert_eq!(f1, dir.path().join("v.mp4"));
         assert!(w1.is_dir());
         let (f2, _) =
-            claim_work_dir(dir.path(), "v.mp4", ".prismpart", ConflictPolicy::Rename).unwrap();
+            claim_work_dir(dir.path(), "v.mp4", ".kewipart", ConflictPolicy::Rename).unwrap();
         assert_eq!(f2, dir.path().join("v (1).mp4"));
         std::fs::write(dir.path().join("x.mp4"), b"1").unwrap();
-        assert!(claim_work_dir(dir.path(), "x.mp4", ".prismpart", ConflictPolicy::Fail).is_err());
+        assert!(claim_work_dir(dir.path(), "x.mp4", ".kewipart", ConflictPolicy::Fail).is_err());
     }
 }

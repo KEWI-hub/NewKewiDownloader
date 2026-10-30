@@ -1334,14 +1334,14 @@ fn remove_partial_files(item: &DownloadItem) {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
-        if name.ends_with(".prismpart.d") && part.is_dir() {
+        if name.ends_with(".kewipart.d") && part.is_dir() {
             let _ = std::fs::remove_dir_all(&part);
-        } else if name.ends_with(".prismpart") {
+        } else if name.ends_with(".kewipart") {
             let _ = std::fs::remove_file(&part);
         }
     }
     let mut part = item.path().into_os_string();
-    part.push(".prismpart");
+    part.push(".kewipart");
     let part = PathBuf::from(part);
     let _ = std::fs::remove_file(&part);
     let mut side = part.into_os_string();

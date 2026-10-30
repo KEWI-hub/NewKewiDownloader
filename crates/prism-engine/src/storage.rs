@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn create_write_read_rename() {
         let dir = tempfile::tempdir().unwrap();
-        let p = dir.path().join("x.prismpart");
+        let p = dir.path().join("x.kewipart");
         let f = create_part_file(&p, Some(10 << 20), true).unwrap();
         assert_eq!(f.metadata().unwrap().len(), 10 << 20);
         assert!(

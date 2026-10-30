@@ -32,7 +32,7 @@ async fn multi_segment_8_connections_with_keepalive_reuse() {
     assert_eq!(done.size, size);
     assert_eq!(done.path, dir.path().join("a.bin"));
     assert_eq!(sha256_file(&done.path), expected_sha256(11, size));
-    assert!(!dir.path().join("a.bin.prismpart").exists());
+    assert!(!dir.path().join("a.bin.kewipart").exists());
     let stats = srv.stats();
     assert!(
         stats.max_concurrent >= 6,
@@ -943,7 +943,7 @@ async fn set_connections_and_cancel() {
         !h.is_finished(),
         "finished before the connections were lowered"
     );
-    let part = h.snapshot().path.unwrap().with_extension("bin.prismpart");
+    let part = h.snapshot().path.unwrap().with_extension("bin.kewipart");
     assert!(part.exists());
     h.cancel(true);
     assert_eq!(wait(&h, 10).await.unwrap_err(), EngineError::Cancelled);

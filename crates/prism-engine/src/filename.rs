@@ -383,20 +383,20 @@ mod tests {
         assert_eq!(numbered_name("a.tar.gz", 2), "a.tar (2).gz");
         assert_eq!(numbered_name("noext", 1), "noext (1)");
         let dir = tempfile::tempdir().unwrap();
-        let p = unique_path(dir.path(), "f.bin", ".prismpart", false).unwrap();
+        let p = unique_path(dir.path(), "f.bin", ".kewipart", false).unwrap();
         assert_eq!(p, dir.path().join("f.bin"));
         std::fs::write(dir.path().join("f.bin"), b"x").unwrap();
         assert_eq!(
-            unique_path(dir.path(), "f.bin", ".prismpart", false).unwrap(),
+            unique_path(dir.path(), "f.bin", ".kewipart", false).unwrap(),
             dir.path().join("f (1).bin")
         );
         assert_eq!(
-            unique_path(dir.path(), "f.bin", ".prismpart", true).unwrap(),
+            unique_path(dir.path(), "f.bin", ".kewipart", true).unwrap(),
             dir.path().join("f.bin")
         );
-        std::fs::write(dir.path().join("f (1).bin.prismpart"), b"x").unwrap();
+        std::fs::write(dir.path().join("f (1).bin.kewipart"), b"x").unwrap();
         assert_eq!(
-            unique_path(dir.path(), "f.bin", ".prismpart", false).unwrap(),
+            unique_path(dir.path(), "f.bin", ".kewipart", false).unwrap(),
             dir.path().join("f (2).bin")
         );
     }

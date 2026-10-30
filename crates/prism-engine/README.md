@@ -46,7 +46,7 @@ Data types (all `serde` Serialize/Deserialize):
   `initial_connections` (4), `min_split_size` (1 MiB), `min_request_size` (4 MiB),
   `max_request_size` (16 MiB), `write_buffer` (1 MiB), `memory_budget` (64 MiB),
   `connect_timeout` (15 s), `read_timeout` (30 s, stall detection), `max_retries` (10),
-  `temp_suffix` (`.prismpart`), `default_proxy` (System), `max_connections_per_host`
+  `temp_suffix` (`.kewipart`), `default_proxy` (System), `max_connections_per_host`
   (None), `host_limit_ttl` (24 h), `ffmpeg_path` (None = `ffmpeg` on PATH).
 * `DownloadRequest`: `url`, `mirrors`, `method` (Get/Post), `body: Option<String>`,
   `headers: Vec<(String,String)>`, `cookies`, `referer`, `user_agent`,
@@ -121,7 +121,7 @@ keeps the request count low. Stall detection drops a connection that delivers no
 `read_timeout`.
 
 **Disk I/O and crash safety** (`segmented/writer.rs`, `storage.rs`). Data goes straight into
-`<name>.prismpart` at its final offset. One writer thread per download coalesces each
+`<name>.kewipart` at its final offset. One writer thread per download coalesces each
 worker's chunks into 1 MiB positioned writes (`seek_write` / `write_all_at`). An engine-wide
 64 MiB budget applies backpressure. On Windows the file is marked sparse before `set_len`;
 on Linux it is `fallocate`d. Free space is checked first. `checkpoint()` is a barrier in the
@@ -162,7 +162,7 @@ AES-128 (IV from the tag or the media sequence), `EXT-X-MAP` and byte ranges. DA
 `dash-mpd-core` parser and resolves the segments itself: `SegmentTemplate` with
 `$Number%0Nd$`/`$Time$`/`$Bandwidth$`, `SegmentTimeline`, `SegmentList`, and single-file
 `SegmentBase`/`BaseURL`. Live, multi-period and DRM manifests return `Unsupported`. N
-parallel workers write each segment to `<final>.prismpart.d/seg-NNNNNN.bin` (write, fsync,
+parallel workers write each segment to `<final>.kewipart.d/seg-NNNNNN.bin` (write, fsync,
 rename), so resuming skips completed segments. Each track is then concatenated and muxed with
 `ffmpeg -c copy` into `.mp4`. Without ffmpeg, or with `remux = false`, the raw `.ts` (HLS) or
 fMP4 (DASH) is kept, any extra track is saved as `<name>.audio.<ext>`, and

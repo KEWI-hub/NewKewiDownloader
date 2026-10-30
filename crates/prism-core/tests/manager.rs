@@ -658,7 +658,7 @@ async fn removing_an_unfinished_download_removes_its_partial_file() {
     wait_downloaded(&core, &id, 512 * 1024).await;
     core.pause_items(std::slice::from_ref(&id));
     wait_paused(&core, &id).await;
-    let part = tmp.path().join("dl").join("gone.bin.prismpart");
+    let part = tmp.path().join("dl").join("gone.bin.kewipart");
     assert!(part.exists(), "partial file expected at {}", part.display());
     // Trash, then empty the trash ("delete files" not ticked).
     core.delete_items(std::slice::from_ref(&id), false, false)

@@ -208,7 +208,7 @@ async fn unsupported_streams_and_cancel() {
     req.speed_limit = 256 * 1024;
     let h = engine().start_media(req, None, vec![]);
     tokio::time::sleep(Duration::from_millis(600)).await;
-    let work = h.snapshot().path.unwrap().with_extension("ts.prismpart.d");
+    let work = h.snapshot().path.unwrap().with_extension("ts.kewipart.d");
     assert!(work.is_dir(), "{}", work.display());
     h.cancel(true);
     assert_eq!(wait(&h, 10).await.unwrap_err(), EngineError::Cancelled);

@@ -316,7 +316,7 @@ mod tests {
         let p = prepare_destination(
             &dest(ConflictPolicy::Rename),
             "a.bin",
-            ".prismpart",
+            ".kewipart",
             Some(10),
             None,
         )
@@ -327,7 +327,7 @@ mod tests {
         let p2 = prepare_destination(
             &dest(ConflictPolicy::Rename),
             "a.bin",
-            ".prismpart",
+            ".kewipart",
             None,
             None,
         )
@@ -339,7 +339,7 @@ mod tests {
             prepare_destination(
                 &dest(ConflictPolicy::Fail),
                 "b.bin",
-                ".prismpart",
+                ".kewipart",
                 None,
                 None
             ),
@@ -348,7 +348,7 @@ mod tests {
         let o = prepare_destination(
             &dest(ConflictPolicy::Overwrite),
             "b.bin",
-            ".prismpart",
+            ".kewipart",
             None,
             None,
         )
@@ -362,7 +362,7 @@ mod tests {
         let r = prepare_destination(
             &dest(ConflictPolicy::Rename),
             "c.bin",
-            ".prismpart",
+            ".kewipart",
             None,
             None,
         )
@@ -376,7 +376,7 @@ mod tests {
         // Explicit file names are sanitized.
         let mut d = dest(ConflictPolicy::Rename);
         d.file_name = Some("x:y?.txt".into());
-        let s = prepare_destination(&d, "ignored", ".prismpart", None, None).unwrap();
+        let s = prepare_destination(&d, "ignored", ".kewipart", None, None).unwrap();
         assert_eq!(s.final_path, dir.path().join("x_y_.txt"));
     }
 }

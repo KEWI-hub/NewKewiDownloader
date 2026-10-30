@@ -26,10 +26,10 @@ pub mod host;
 pub mod ipc;
 
 /// Native messaging host name (the manifest `name` and registry key name).
-pub const HOST_NAME: &str = "dev.prism.host";
+pub const HOST_NAME: &str = "dev.newkewi.host";
 
 /// Human readable description written into the host manifest.
-pub const HOST_DESCRIPTION: &str = "Prism download manager browser integration";
+pub const HOST_DESCRIPTION: &str = "New Kewi Downloader browser integration";
 
 /// Stable ID of the unpacked/dev Chromium extension. It is derived from the
 /// public key embedded in `extension/manifest` (`key`), see `extension/README.md`.

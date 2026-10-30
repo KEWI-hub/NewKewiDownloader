@@ -61,7 +61,7 @@ pub struct ResumeState {
     pub url: Url,
     /// URL after redirects (may be expired; the engine falls back to `url`).
     pub final_url: Option<Url>,
-    /// The in-progress file (`<final>.prismpart`, or the media work directory marker).
+    /// The in-progress file (`<final>.kewipart`, or the media work directory marker).
     pub part_path: PathBuf,
     /// Intended final path.
     pub final_path: PathBuf,
@@ -189,7 +189,7 @@ mod tests {
             kind: ResumeKind::Http,
             url: Url::parse("http://h/a").unwrap(),
             final_url: Some(Url::parse("http://h/b").unwrap()),
-            part_path: "a.prismpart".into(),
+            part_path: "a.kewipart".into(),
             final_path: "a".into(),
             total_size: Some(100),
             etag: Some("\"x\"".into()),
@@ -235,7 +235,7 @@ mod tests {
     fn disk_verification() {
         let dir = tempfile::tempdir().unwrap();
         let mut s = sample();
-        s.part_path = dir.path().join("a.prismpart");
+        s.part_path = dir.path().join("a.kewipart");
         assert!(s.verify_against_disk().is_err());
         std::fs::write(&s.part_path, vec![0u8; 100]).unwrap();
         s.verify_against_disk().unwrap();

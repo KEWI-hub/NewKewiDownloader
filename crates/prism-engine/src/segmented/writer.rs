@@ -356,7 +356,7 @@ mod tests {
     #[tokio::test]
     async fn coalesces_writes_and_reports_durable_state() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("w.prismpart");
+        let path = dir.path().join("w.kewipart");
         let total = 3 << 20;
         let file = storage::create_part_file(&path, Some(total), true).unwrap();
         let table = Arc::new(SegmentTable::new(Some(total), 1 << 20, true));
