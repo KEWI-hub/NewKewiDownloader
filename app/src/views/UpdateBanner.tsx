@@ -22,7 +22,7 @@ interface UpdateState {
 
 const useUpdate = create<UpdateState>(() => ({ info: null, later: null, phase: "idle", progress: 0 }));
 
-// "Later" lasts until Prism quits, also when the main window is created again after a while in
+// "Later" lasts until New Kewi Downloader quits, also when the main window is created again after a while in
 // the tray (it is closed there to free memory), so it is kept with this run's id.
 const LATER_KEY = "prism.updateLater";
 
@@ -60,7 +60,7 @@ export async function checkForUpdates(manual = false): Promise<void> {
         /* storage unavailable */
       }
     }
-    if (manual && !info) toast(t("Prism is up to date"), { kind: "success", ms: 2500 });
+    if (manual && !info) toast(t("New Kewi Downloader is up to date"), { kind: "success", ms: 2500 });
   } catch (e) {
     if (manual) toast(t("Couldn't check for updates"), { kind: "error", body: String(e) });
   }
@@ -81,7 +81,7 @@ async function install() {
   }
 }
 
-/** "Prism x.y.z is ready — Restart & update" bar above the download list. */
+/** "New Kewi Downloader x.y.z is ready — Restart & update" bar above the download list. */
 export function UpdateBanner() {
   const enabled = useApp((s) => s.settings?.general.checkUpdates ?? true);
   const { info, later, phase, progress } = useUpdate();
@@ -108,17 +108,17 @@ export function UpdateBanner() {
                   <>
                     <b>
                       {phase === "installing"
-                        ? t("Installing Prism {version}…", { version: info.version })
-                        : t("Downloading Prism {version}… {percent}%", { version: info.version, percent: Math.round(progress * 100) })}
+                        ? t("Installing New Kewi Downloader {version}…", { version: info.version })
+                        : t("Downloading New Kewi Downloader {version}… {percent}%", { version: info.version, percent: Math.round(progress * 100) })}
                     </b>{" "}
-                    {t("Prism restarts by itself and your downloads continue.")}
+                    {t("New Kewi Downloader restarts by itself and your downloads continue.")}
                     <span className="ubanner__bar">
                       <span style={{ width: `${Math.max(4, progress * 100)}%` }} />
                     </span>
                   </>
                 ) : (
                   <>
-                    <b>{t("Prism {version} is ready.", { version: info.version })}</b> {t("You have {version}.", { version: info.current })}{" "}
+                    <b>{t("New Kewi Downloader {version} is ready.", { version: info.version })}</b> {t("You have {version}.", { version: info.current })}{" "}
                     <button type="button" className="link-btn" onClick={() => void openUrl(`${RELEASES}/tag/v${info.version}`)}>
                       {t("What’s new")}
                     </button>

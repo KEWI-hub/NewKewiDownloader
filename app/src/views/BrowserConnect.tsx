@@ -34,7 +34,7 @@ const PAGE: Record<string, string> = {
 /** Firefox-based browsers: Firefox's extension, loaded as a temporary add-on. */
 const FIREFOX_FAMILY = ["firefox", "zen"];
 
-/** Prism's extension in the Chrome Web Store: Chrome, Edge, Brave, Opera, Vivaldi, Helium and Chromium install it from there. */
+/** New Kewi Downloader's extension in the Chrome Web Store: Chrome, Edge, Brave, Opera, Vivaldi, Helium and Chromium install it from there. */
 export const EXTENSION_STORE_URL = "https://chromewebstore.google.com/detail/prism-download-manager/mmcdeiglkbfbicdjboocmhehodogilfl";
 /** The store's install button as each browser labels it (Chrome's label elsewhere). */
 const ADD_LABEL: Record<string, string> = { brave: "Add to Brave", opera: "Add to Opera" };
@@ -67,8 +67,8 @@ function pickDefault(browsers: BrowserIntegration[]): string {
 }
 
 /**
- * Step-by-step guide that gets the browser extension installed: pick your browser, open Prism in
- * the Chrome Web Store and add it (Firefox: load the Prism folder as a temporary add-on) — with a
+ * Step-by-step guide that gets the browser extension installed: pick your browser, open New Kewi Downloader in
+ * the Chrome Web Store and add it (Firefox: load the New Kewi Downloader folder as a temporary add-on) — with a
  * live check that turns green the moment the extension connects.
  *
  * Button and setting names of the browser itself ("Add to Chrome", "Developer mode", …) stay in
@@ -83,13 +83,15 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
   const [browser, setBrowser] = useState<string | null>(null);
   const current = browser ?? (status ? pickDefault(status.browsers) : "chrome");
   const firefox = FIREFOX_FAMILY.includes(current);
-  // "Prefer to add it by hand?" (below the store guide): the unpacked extension Prism ships.
-  const [byHand, setByHand] = useState(false);
+  // The unpacked extension New Kewi Downloader ships. It is the way in: the Chrome Web Store
+  // listing belongs to Prism and its copy speaks the old native host name, so it cannot talk to
+  // this app. Default this back to `false` once there is a store listing of our own.
+  const [byHand, setByHand] = useState(true);
   const [folder, setFolder] = useState<string | null>(null);
   useEffect(() => {
     if (firefox || byHand) void api.extensionFolder(firefox).then(setFolder, () => setFolder(null));
   }, [firefox, byHand]);
-  // A Prism extension someone loaded by hand earlier ("Load unpacked"): the store version
+  // A New Kewi Downloader extension someone loaded by hand earlier ("Load unpacked"): the store version
   // updates by itself, but the browser won't add it while the old one is still installed.
   const manual = !firefox && !byHand && status?.extensionInstallType === "development";
   // Store steps start after the "remove the copy added by hand" step when that one shows.
@@ -193,7 +195,7 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
           <li className="bstep bstep--wide">
             <span className="bstep__n">3</span>
             <div className="bstep__txt">
-              <div className="bstep__t">{t("Pick manifest.json in the Prism folder")}</div>
+              <div className="bstep__t">{t("Pick manifest.json in the New Kewi Downloader folder")}</div>
               <div className="bstep__d">{pasteHint}</div>
             </div>
             <div className="howto__path bstep__full">
@@ -215,9 +217,9 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
             <li className="bstep">
               <span className="bstep__n">1</span>
               <div className="bstep__txt">
-                <div className="bstep__t">{t("Remove the Prism you added by hand")}</div>
+                <div className="bstep__t">{t("Remove the New Kewi Downloader you added by hand")}</div>
                 <div className="bstep__d">
-                  {tr("The store version updates by itself. On {address} click {button} under Prism. The button copies the address and opens {browser}.", {
+                  {tr("The store version updates by itself. On {address} click {button} under New Kewi Downloader. The button copies the address and opens {browser}.", {
                     address: <code className="selectable">{PAGE[current]}</code>,
                     button: <b>Remove</b>,
                     browser: name,
@@ -232,7 +234,7 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
           <li className="bstep">
             <span className="bstep__n">{step + 1}</span>
             <div className="bstep__txt">
-              <div className="bstep__t">{t("Open Prism in the Chrome Web Store")}</div>
+              <div className="bstep__t">{t("Open New Kewi Downloader in the Chrome Web Store")}</div>
               <div className="bstep__d">
                 {current === "edge"
                   ? t("Edge asks once to allow extensions from other stores: click {button} at the top of the page.", { button: "Allow" })
@@ -260,15 +262,15 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
             <span className="bstep__n">{step + 3}</span>
             <div className="bstep__txt">
               <div className="bstep__t">{t("Confirm with “{button}”", { button: "Add extension" })}</div>
-              <div className="bstep__d">{t("{browser} asks once whether to add Prism. From then on it updates Prism by itself.", { browser: name })}</div>
+              <div className="bstep__d">{t("{browser} asks once whether to add New Kewi Downloader. From then on it updates New Kewi Downloader by itself.", { browser: name })}</div>
             </div>
             <FakeButton label="Add extension" />
           </li>
           <li className="bstep">
             <span className="bstep__n">{step + 4}</span>
             <div className="bstep__txt">
-              <div className="bstep__t">{t("Pin Prism next to the address bar")}</div>
-              <div className="bstep__d">{t("Click the puzzle icon, then the pin next to Prism. The check below turns green as soon as it's connected.")}</div>
+              <div className="bstep__t">{t("Pin New Kewi Downloader next to the address bar")}</div>
+              <div className="bstep__d">{t("Click the puzzle icon, then the pin next to New Kewi Downloader. The check below turns green as soon as it's connected.")}</div>
             </div>
             <FakeButton label={t("Pin")} icon="pin" />
           </li>
@@ -289,8 +291,8 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
               <Icon name="check" size={16} strokeWidth={2.4} />
             </span>
             <div>
-              <b>{t("Connected!")}</b> {t("Downloads and videos from your browser now open in Prism.")}
-              <div className="bstatus__sub">{t("Tip: pin the Prism icon next to the address bar (puzzle icon → pin).")}</div>
+              <b>{t("Connected!")}</b> {t("Downloads and videos from your browser now open in New Kewi Downloader.")}
+              <div className="bstatus__sub">{t("Tip: pin the New Kewi Downloader icon next to the address bar (puzzle icon → pin).")}</div>
             </div>
           </motion.div>
         ) : (
@@ -316,7 +318,7 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
           {byHand && (
             <>
               <p className="t-small text-tertiary">
-                {t("Without the store: load the folder Prism keeps up to date. A copy added this way doesn't update by itself — after a Prism update, click ↻ next to Prism on the extensions page.")}
+                {t("Without the store: load the folder New Kewi Downloader keeps up to date. A copy added this way doesn't update by itself — after a New Kewi Downloader update, click ↻ next to New Kewi Downloader on the extensions page.")}
               </p>
               <ol className="bsteps">
                 <li className="bstep">
@@ -342,7 +344,7 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
                 <li className="bstep bstep--wide">
                   <span className="bstep__n">3</span>
                   <div className="bstep__txt">
-                    <div className="bstep__t">{t("Click “{button}” and choose the Prism folder", { button: "Load unpacked" })}</div>
+                    <div className="bstep__t">{t("Click “{button}” and choose the New Kewi Downloader folder", { button: "Load unpacked" })}</div>
                     <div className="bstep__d">{pasteHint}</div>
                   </div>
                   <FakeButton label="Load unpacked" />
@@ -452,24 +454,24 @@ export function ConnectBanner({ onOpen }: { onOpen: () => void }) {
               {outdated ? (
                 status?.extensionInstallType === "development" ? (
                   <span className="cbanner__txt">
-                    <b>{t("Prism's extension is now in the Chrome Web Store.")}</b>{" "}
+                    <b>{t("New Kewi Downloader's extension is now in the Chrome Web Store.")}</b>{" "}
                     {t("Yours ({version}) was added by hand and won't update by itself: switch to the store version, it takes a minute.", { version: status?.extensionVersion ?? "" })}
                   </span>
                 ) : (
                   <span className="cbanner__txt">
-                    {tr("{older} ({version}, Prism is {appVersion}).", {
-                      older: <b>{t("Your browser still runs an older Prism extension")}</b>,
+                    {tr("{older} ({version}, New Kewi Downloader is {appVersion}).", {
+                      older: <b>{t("Your browser still runs an older New Kewi Downloader extension")}</b>,
                       version: status?.extensionVersion,
                       appVersion: status?.appVersion,
                     })}{" "}
                     {OS === "mac"
-                      ? t("Reload it: on {page} click ↻ next to Prism, or restart the browser.", { page: "chrome://extensions" })
-                      : t("Reload it: on {page} or {page2} click ↻ next to Prism, or restart the browser.", { page: "chrome://extensions", page2: "edge://extensions" })}
+                      ? t("Reload it: on {page} click ↻ next to New Kewi Downloader, or restart the browser.", { page: "chrome://extensions" })
+                      : t("Reload it: on {page} or {page2} click ↻ next to New Kewi Downloader, or restart the browser.", { page: "chrome://extensions", page2: "edge://extensions" })}
                   </span>
                 )
               ) : (
                 <span className="cbanner__txt">
-                  <b>{t("Catch downloads straight from your browser.")}</b> {t("Add the Prism extension — it takes about a minute.")}
+                  <b>{t("Catch downloads straight from your browser.")}</b> {t("Add the New Kewi Downloader extension — it takes about a minute.")}
                 </span>
               )}
               <button type="button" className="btn btn--primary btn--sm" onClick={onOpen}>

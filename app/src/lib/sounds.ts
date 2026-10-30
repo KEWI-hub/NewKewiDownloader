@@ -5,7 +5,7 @@ import { tk } from "./i18n";
  *  them with `t(name)`. */
 export const COMPLETE_SOUNDS: { id: string; name: string }[] = [
   { id: "classic", name: tk("Classic") },
-  { id: "prism", name: "Prism" },
+  { id: "prism", name: "New Kewi Downloader" },
   { id: "pop", name: tk("Pop") },
   { id: "kalimba", name: tk("Kalimba") },
   { id: "snap", name: tk("Snap") },

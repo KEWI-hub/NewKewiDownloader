@@ -52,7 +52,7 @@ export function Onboarding() {
           </button>
         ) : (
           <button type="button" className="btn btn--primary" onClick={finish} data-autofocus>
-            {t("Start using Prism")}
+            {t("Start using New Kewi Downloader")}
           </button>
         )}
       </footer>
@@ -67,7 +67,7 @@ function Welcome() {
       <h1>
         {t("One beam.")} <span className="prism-text">{t("Many rays.")}</span>
       </h1>
-      <p>{t("Prism splits every download into parallel segments, resumes where it stopped and grabs videos from the pages you visit. Three quick steps and you are ready.")}</p>
+      <p>{t("New Kewi Downloader splits every download into parallel segments, resumes where it stopped and grabs videos from the pages you visit. Three quick steps and you are ready.")}</p>
     </div>
   );
 }
@@ -78,7 +78,7 @@ function Browser() {
     <>
       <h2>{t("Connect your browser")}</h2>
       <p className="text-secondary">
-        {t("Add the Prism extension to your browser once — then clicking a download link, or the “{button}” button on a page, sends it straight to Prism. It takes about a minute.", {
+        {t("Add the New Kewi Downloader extension to your browser once — then clicking a download link, or the “{button}” button on a page, sends it straight to New Kewi Downloader. It takes about a minute.", {
           button: "Download video",
         })}
       </p>
@@ -161,7 +161,7 @@ function Ready() {
   );
 }
 
-/** A friendly, skippable ask: Prism is free, and stars on GitHub help people find it. */
+/** A friendly, skippable ask: New Kewi Downloader is free, and stars on GitHub help people find it. */
 function StarCard() {
   const [thanks, setThanks] = useState(false);
   return (
@@ -170,7 +170,7 @@ function StarCard() {
         <Icon name="star" size={18} />
       </span>
       <div className="onboard__startxt">
-        <b>{thanks ? t("Thank you!") : t("Like Prism?")}</b>
+        <b>{thanks ? t("Thank you!") : t("Like New Kewi Downloader?")}</b>
         <span className="t-small text-secondary">{t("It’s free and open source. A star on GitHub helps more people find it.")}</span>
       </div>
       <button

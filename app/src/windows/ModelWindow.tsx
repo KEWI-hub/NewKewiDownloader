@@ -41,7 +41,7 @@ function problemText(code: string): string {
 
 /**
  * "Download a model" from Hugging Face (#29): find a model by name, link or search, pick its
- * files (Prism suggests one GGUF version, or the weights in one format) and they download one
+ * files (New Kewi Downloader suggests one GGUF version, or the weights in one format) and they download one
  * after another in the "Hugging Face" queue, each with many connections and checked by SHA-256.
  */
 export default function ModelWindow({ source }: { source: string }) {
@@ -273,8 +273,8 @@ export default function ModelWindow({ source }: { source: string }) {
           <div className="hf-token card">
             <div className="t-small text-secondary">
               {repo?.gated && !problem
-                ? t("This model is gated: accept its terms on its Hugging Face page, then add an access token so Prism can download it.")
-                : t("An access token lets Prism download gated and private models. Read access is enough.")}{" "}
+                ? t("This model is gated: accept its terms on its Hugging Face page, then add an access token so New Kewi Downloader can download it.")
+                : t("An access token lets New Kewi Downloader download gated and private models. Read access is enough.")}{" "}
               <button type="button" className="linkbtn" onClick={() => void openUrl("https://huggingface.co/settings/tokens")}>
                 {t("Create a token")}
               </button>

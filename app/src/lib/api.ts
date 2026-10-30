@@ -227,7 +227,7 @@ export const api = {
   openItem: (id: string) => invoke<void>("open_item", { id }),
   revealItem: (id: string) => invoke<void>("reveal_item", { id }),
   openPath: (path: string) => invoke<void>("open_path", { path }),
-  /** A newer Prism release, or null when up to date. */
+  /** A newer New Kewi Downloader release, or null when up to date. */
   checkUpdate: () => invoke<UpdateInfo | null>("check_update"),
   /** Downloads, installs and restarts into the update (progress: `update-progress` events). */
   installUpdate: () => invoke<void>("install_update"),
@@ -235,7 +235,7 @@ export const api = {
   extensionFolder: (firefox: boolean) => invoke<string | null>("extension_folder", { firefox }),
   /** Starts (or focuses) the browser. It can't be sent to `chrome://extensions` directly. */
   openBrowser: (browser: string) => invoke<void>("open_browser", { browser }),
-  /** Prism's Chrome Web Store page in that browser (the default browser if it can't start). */
+  /** New Kewi Downloader's Chrome Web Store page in that browser (the default browser if it can't start). */
   openExtensionStore: (browser: string) => invoke<void>("open_extension_store", { browser }),
 
   assignToQueue: (ids: string[], queueId: string | null) => invoke<void>("assign_to_queue", { ids, queueId }),

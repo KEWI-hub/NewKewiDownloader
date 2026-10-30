@@ -15,7 +15,7 @@ const DAYS = [tk("Mo"), tk("Tu"), tk("We"), tk("Th"), tk("Fr"), tk("Sa"), tk("Su
 const AFTER: { type: PostAction["type"]; label: string; icon: IconName }[] = [
   { type: "none", label: tk("Do nothing"), icon: "minus" },
   { type: "sound", label: tk("Play sound"), icon: "sound" },
-  { type: "exit", label: tk("Exit Prism"), icon: "close" },
+  { type: "exit", label: tk("Exit New Kewi Downloader"), icon: "close" },
   { type: "sleep", label: tk("Sleep"), icon: "sleep" },
   { type: "hibernate", label: tk("Hibernate"), icon: "moon" },
   { type: "shutdown", label: tk("Shut down"), icon: "power" },

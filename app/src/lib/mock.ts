@@ -440,7 +440,7 @@ const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
     queues,
     settings,
     grabberProjects,
-    dataDir: "C:\\Users\\you\\AppData\\Roaming\\Prism",
+    dataDir: "C:\\Users\\you\\AppData\\Roaming\\New Kewi Downloader",
     captures: [],
   }),
   update_settings: ({ patch }) => {
@@ -704,8 +704,8 @@ const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
       emitApp("update-progress", [i * 800_000, 16_000_000]);
     }
   },
-  extension_dir: () => "C:\\Program Files\\Prism\\extension",
-  extension_folder: ({ firefox }) => `C:\\Users\\you\\AppData\\Local\\Prism\\extension\\${firefox ? "firefox" : "chromium"}`,
+  extension_dir: () => "C:\\Program Files\\New Kewi Downloader\\extension",
+  extension_folder: ({ firefox }) => `C:\\Users\\you\\AppData\\Local\\New Kewi Downloader\\extension\\${firefox ? "firefox" : "chromium"}`,
   open_browser: () => {
     // Demo: pretend the user installs the extension a few seconds after the page opens.
     if (!mockExtSeen) setTimeout(() => (mockExtSeen = Date.now()), 6000);
@@ -778,7 +778,7 @@ const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
     deno: { tool: "deno", source: "managed", version: "2.9.7", path: "…\tools\deno.exe" },
   }),
   integration_status: () => ({
-    hostPath: "C:\\Program Files\\Prism\\prism-native-host.exe",
+    hostPath: "C:\\Program Files\\New Kewi Downloader\\prism-native-host.exe",
     extensionConnected: mockExtSeen > 0,
     extensionVersion: mockExtSeen > 0 ? (demoParam("oldext") ? "1.0.0" : "1.1.7") : null,
     extensionInstallType: mockExtSeen > 0 ? (demoParam("exttype") ?? (mockExtFromStore ? "normal" : "development")) : null,
@@ -800,7 +800,7 @@ const commands: Record<string, (args: Record<string, unknown>) => unknown> = {
     ).map(([browser, name, installed, registered]) => ({ browser, name, installed, supported: true, registered, pointsToThisHost: registered, manifestPath: null })),
   }),
   free_space: () => 412 * GB,
-  data_dir: () => "C:\\Users\\you\\AppData\\Roaming\\Prism",
+  data_dir: () => "C:\\Users\\you\\AppData\\Roaming\\New Kewi Downloader",
   pause_items: ({ ids }) => setStatus(ids as string[], "paused"),
   start_items: ({ ids }) => setStatus(ids as string[], "downloading"),
   pause_all: () => setStatus(Object.values(items).filter((i) => i.status === "downloading").map((i) => i.id), "paused"),

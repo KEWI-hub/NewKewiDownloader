@@ -32,7 +32,7 @@ export default function MiniWindow() {
       <div className="mini__list">
         {ids.length ? ids.slice(0, 6).map((id) => <MiniRow key={id} id={id} onOpen={show} />) : (
           <button type="button" className="mini__idle" onClick={show}>
-            <Icon name="status-completed" size={16} className="text-success" /> {t("Nothing downloading — open Prism")}
+            <Icon name="status-completed" size={16} className="text-success" /> {t("Nothing downloading — open New Kewi Downloader")}
           </button>
         )}
       </div>

@@ -37,14 +37,14 @@ export function MainWindow() {
   const detailsOpen = bottomOpen && !compact;
 
   useEffect(() => {
-    // Shown after the first paint, unless Prism started in the background (autostart) or
+    // Shown after the first paint, unless New Kewi Downloader started in the background (autostart) or
     // "Start minimized" is on: then it waits in the tray.
     const show = () => requestAnimationFrame(() => requestAnimationFrame(() => void win.show()));
     api.mainWindowStartsVisible().then((visible) => visible !== false && show(), show);
   }, []);
 
   // Settings › General › "Remove downloads whose files were deleted": checked again whenever the
-  // window comes to the front (files are usually deleted while Prism is in the background).
+  // window comes to the front (files are usually deleted while New Kewi Downloader is in the background).
   useEffect(() => {
     let last = 0;
     const check = () => {

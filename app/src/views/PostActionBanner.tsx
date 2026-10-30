@@ -8,7 +8,7 @@ import { attempt } from "../lib/ui";
 
 /** The countdown line per action; `{secs}` is the seconds left. */
 const TEXT: Record<string, [IconName, string]> = {
-  exit: ["close", tk("Prism will exit in {secs} s")],
+  exit: ["close", tk("New Kewi Downloader will exit in {secs} s")],
   sleep: ["sleep", tk("The computer will sleep in {secs} s")],
   hibernate: ["sleep", tk("The computer will hibernate in {secs} s")],
   shutdown: ["power", tk("The computer will shut down in {secs} s")],

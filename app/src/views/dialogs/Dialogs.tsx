@@ -458,7 +458,7 @@ function RefreshUrlDialog({ id, onClose }: { id: string | null; onClose: () => v
       }
     >
       <p className="dialog-text">
-        {t("Expired links (403 / 410) can be replaced without losing progress. Open the original page again, copy the fresh download link and paste it here — Prism checks that it is the same file.")}
+        {t("Expired links (403 / 410) can be replaced without losing progress. Open the original page again, copy the fresh download link and paste it here — New Kewi Downloader checks that it is the same file.")}
       </p>
       <Field label={t("Current address")}>
         <div className="input input--readonly">

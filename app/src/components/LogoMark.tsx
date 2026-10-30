@@ -9,7 +9,7 @@ const RAYS: [string, string, string][] = [
   ["#8b7bff", "M42 36.6L61 51.5", "10 3.5 7 3.5 60"],
 ];
 
-/** The Prism mark (assets/brand/logo-mark*.svg). `glass="white"` for dark tiles, `"indigo"` works anywhere. */
+/** The New Kewi Downloader mark (assets/brand/logo-mark*.svg). `glass="white"` for dark tiles, `"indigo"` works anywhere. */
 export function LogoMark({ size = 22, glass = "white" }: { size?: number; glass?: "white" | "indigo" }) {
   const id = useId().replace(/:/g, "");
   const white = glass === "white";

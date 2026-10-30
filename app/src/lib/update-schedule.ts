@@ -1,10 +1,10 @@
-// When Prism looks for a new version by itself (the manual "Check for updates" is separate).
+// When New Kewi Downloader looks for a new version by itself (the manual "Check for updates" is separate).
 
 export const FIRST_CHECK_MS = 5_000;
 export const EVERY_MS = 60 * 60 * 1000;
 /**
  * Coming back to the window checks again when the last check is older than this: timers stall
- * while the computer sleeps or Prism sits in the tray.
+ * while the computer sleeps or New Kewi Downloader sits in the tray.
  */
 export const ON_RETURN_MS = 30 * 60 * 1000;
 

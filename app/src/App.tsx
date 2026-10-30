@@ -62,7 +62,7 @@ export function App() {
   useEffect(() => {
     const on = () => setRoute(parseRoute(location.hash));
     window.addEventListener("hashchange", on);
-    void attempt(useApp.getState().init(), t("Prism could not start")).then(applyPreviewParams);
+    void attempt(useApp.getState().init(), t("New Kewi Downloader could not start")).then(applyPreviewParams);
     return () => window.removeEventListener("hashchange", on);
   }, []);
 

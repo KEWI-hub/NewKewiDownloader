@@ -13,7 +13,7 @@ import { BrowserConnect, useExtensionStatus } from "../BrowserConnect";
 type Change = { icon: IconName; title: string; body: string; credit?: string; action?: "sounds" | "language" | "appearance" | "model" };
 
 /**
- * What this version brings (shown once after an update, and from About Prism), then what the
+ * What this version brings (shown once after an update, and from About New Kewi Downloader), then what the
  * version before brought, for people updating from older ones. Titles and bodies are translated
  * where they're shown; `credit` is the contributor's handle.
  */
@@ -21,20 +21,20 @@ const CHANGES: Change[] = [
   {
     icon: "model",
     title: tk("AI models from Hugging Face"),
-    body: tk("Download a model by its name, a link or a search. Prism picks the files you need (one GGUF version, the weights in one format) and downloads them over many connections, checked against Hugging Face."),
+    body: tk("Download a model by its name, a link or a search. New Kewi Downloader picks the files you need (one GGUF version, the weights in one format) and downloads them over many connections, checked against Hugging Face."),
     credit: "Vasili-Sk",
     action: "model",
   },
   {
     icon: "globe",
     title: tk("Turkish"),
-    body: tk("Prism now speaks Turkish too."),
+    body: tk("New Kewi Downloader now speaks Turkish too."),
     action: "language",
   },
   {
     icon: "monitor",
     title: tk("Windows on Linux"),
-    body: tk("On KDE Plasma, Prism's windows no longer sometimes open empty."),
+    body: tk("On KDE Plasma, New Kewi Downloader's windows no longer sometimes open empty."),
   },
   {
     icon: "sun",
@@ -76,7 +76,7 @@ export function WhatsNewSheet() {
       <header className="whatsnew__head">
         <BrandTile size={52} />
         <div>
-          <h2>{t("Prism {version} is here", { version })}</h2>
+          <h2>{t("New Kewi Downloader {version} is here", { version })}</h2>
           <p className="text-secondary">{t("AI models from Hugging Face, Turkish, and a fix for Linux.")}</p>
         </div>
       </header>
@@ -85,9 +85,9 @@ export function WhatsNewSheet() {
         <div className="whatsnew__storehead">
           <Icon name="puzzle" size={18} className="text-accent" />
           <div>
-            <b>{t("Add Prism to your browser in one click")}</b>
+            <b>{t("Add New Kewi Downloader to your browser in one click")}</b>
             <div className="t-small text-secondary">
-              {t("From the Chrome Web Store, for Chrome, Edge, Brave, Opera, Vivaldi and Helium. It updates by itself, so there's nothing to reload after a Prism update.")}
+              {t("From the Chrome Web Store, for Chrome, Edge, Brave, Opera, Vivaldi and Helium. It updates by itself, so there's nothing to reload after a New Kewi Downloader update.")}
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function WhatsNewSheet() {
               <Icon name="check" size={16} strokeWidth={2.4} />
             </span>
             <div>
-              <b>{t("You're all set.")}</b> {t("Your browser runs Prism from the Chrome Web Store.")}
+              <b>{t("You're all set.")}</b> {t("Your browser runs New Kewi Downloader from the Chrome Web Store.")}
             </div>
           </div>
         ) : (
@@ -106,12 +106,12 @@ export function WhatsNewSheet() {
       </section>
 
       <ChangeList changes={CHANGES} />
-      <h3 className="whatsnew__older t-small text-tertiary">{t("New in Prism {version}", { version: PREVIOUS.version })}</h3>
+      <h3 className="whatsnew__older t-small text-tertiary">{t("New in New Kewi Downloader {version}", { version: PREVIOUS.version })}</h3>
       <ChangeList changes={PREVIOUS.changes} />
       <p className="whatsnew__star t-small text-secondary">
         <Icon name="star" size={14} className="text-accent" />
         <span>
-          {t("Enjoying Prism? A star on GitHub helps more people find it.")}{" "}
+          {t("Enjoying New Kewi Downloader? A star on GitHub helps more people find it.")}{" "}
           <button type="button" className="linkbtn" onClick={() => void openUrl(REPO_URL)}>
             {t("Star on GitHub")}
           </button>
@@ -164,7 +164,7 @@ function ChangeList({ changes }: { changes: Change[] }) {
 }
 
 /**
- * Opens "What's new" once after Prism was updated, when the main window is on screen (not while
+ * Opens "What's new" once after New Kewi Downloader was updated, when the main window is on screen (not while
  * it starts hidden in the tray). A fresh install shows the onboarding instead and only records
  * the version.
  */

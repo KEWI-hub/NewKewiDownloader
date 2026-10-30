@@ -2,8 +2,8 @@
 
 import { inTauri } from "./api";
 
-/** Prism on GitHub. */
-export const REPO_URL = "https://github.com/FortoGraphy/prism-download-manager";
+/** New Kewi Downloader on GitHub. */
+export const REPO_URL = "https://github.com/KEWI-hub/NewKewiDownloader";
 
 export async function openUrl(url: string) {
   if (inTauri) {

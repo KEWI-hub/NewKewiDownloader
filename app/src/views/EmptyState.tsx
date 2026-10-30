@@ -13,7 +13,7 @@ export function EmptyState() {
 
   let icon: IconName = "download";
   let title = t("No downloads yet");
-  let text = t("Paste a link, drop one here, or let the browser extension hand downloads to Prism.");
+  let text = t("Paste a link, drop one here, or let the browser extension hand downloads to New Kewi Downloader.");
   let cta: { label: string; run: () => void } | null = { label: t("Add URL"), run: actions.openAddUrl };
 
   if (search) {

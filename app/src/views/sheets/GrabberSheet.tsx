@@ -115,7 +115,7 @@ export function GrabberSheet({ projectId }: { projectId?: string | null }) {
       <div className="grab__body">
         {step === 0 && (
           <div className="grab__form">
-            <Field label={t("Start page")} hint={t("Prism follows links from here according to the rules on the next step.")}>
+            <Field label={t("Start page")} hint={t("New Kewi Downloader follows links from here according to the rules on the next step.")}>
               <TextField value={cfg.startUrl} onChange={(v) => set({ startUrl: v })} label={t("Start page")} icon="globe" mono placeholder="https://example.org/gallery/" autoFocus />
             </Field>
             <Field label={t("Project name")}>
