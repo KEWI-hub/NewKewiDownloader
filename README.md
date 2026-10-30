@@ -46,6 +46,22 @@ npm test --prefix extension
 
 Platform notes are in [BUILD.md](BUILD.md).
 
+## Releasing
+
+`.github/workflows/release.yml` builds and signs the installers. It needs two repository
+secrets before a tag will produce a working release:
+
+- `TAURI_SIGNING_PRIVATE_KEY` — the contents of our updater private key
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — empty, since the key has no password
+
+The key pair was generated for this fork; the public half is already in
+`app/src-tauri/tauri.conf.json`. The private half lives outside this repository at
+`%USERPROFILE%\.newkewi-keys\newkewi.key` and must never be committed. Lose it and the
+auto-updater can no longer be fed: every installed copy would have to be replaced by hand.
+
+The `pages` and `badge-refresh` workflows are upstream's and switch themselves off outside
+their repository.
+
 ## How this fork differs from Prism
 
 Only the identity is changed, so that upstream work can keep being merged rather than
