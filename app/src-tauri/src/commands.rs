@@ -73,7 +73,7 @@ pub async fn add_url(core: State<'_, Core>, args: AddUrlArgs) -> CmdResult<Captu
         file_name: args.file_name.filter(|f| !f.is_empty()),
         ..Default::default()
     };
-    Ok(core.capture(n, CaptureSource::Manual))
+    Ok(core.capture_link(n, CaptureSource::Manual).await)
 }
 
 #[tauri::command]

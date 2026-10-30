@@ -326,6 +326,44 @@ impl Core {
         Ok(items)
     }
 
+    /// [`Core::capture`] for a link typed or pasted in the app. A page of a player that yt-dlp
+    /// doesn't know ([`crate::sites`]) is first resolved to its stream, which then opens the
+    /// same dialog as that stream picked in the browser's video menu (an MP4 named after the
+    /// video). When resolving fails the link goes on as typed.
+    pub async fn capture_link(&self, n: NewItem, source: CaptureSource) -> CaptureInfo {
+        if n.kind.is_none() && crate::sites::handles(&n.url) {
+            match crate::sites::resolve(&n.url).await {
+                Ok(stream) => {
+                    tracing::info!(page = %n.url, stream = %stream.url, "resolved the page's player");
+                    let referer = format!("{}/", stream.player_origin);
+                    let item = NewItem {
+                        url: stream.url.clone(),
+                        kind: Some(if stream.hls { ItemKind::Hls } else { ItemKind::Http }),
+                        file_name: n.file_name.clone().or_else(|| {
+                            stream
+                                .title
+                                .as_ref()
+                                .map(|t| format!("{}.mp4", super::sanitize_name(t)))
+                        }),
+                        referer: Some(referer),
+                        headers: vec![("Origin".into(), stream.player_origin.clone())],
+                        media: Some(MediaInfo {
+                            title: stream.title.clone(),
+                            page_url: Some(n.url.clone()),
+                            ..Default::default()
+                        }),
+                        conflict: Some(ConflictAction::Rename),
+                        description: n.description.clone(),
+                        ..Default::default()
+                    };
+                    return self.capture(item, source);
+                }
+                Err(e) => tracing::warn!(page = %n.url, error = %e, "couldn't resolve the page's player"),
+            }
+        }
+        self.capture(n, source)
+    }
+
     /// Open the "Download File" flow for a URL. The server is probed in the background
     /// and the dialog updates when the real name/size arrive.
     pub fn capture(&self, n: NewItem, source: CaptureSource) -> CaptureInfo {
