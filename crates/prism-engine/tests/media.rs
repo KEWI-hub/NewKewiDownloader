@@ -10,8 +10,8 @@ use std::time::Duration;
 use bytes::Bytes;
 use common::*;
 use prism_engine::{
-    DownloadState, EngineError, MediaKind, MediaRequest, ResumeKind, ResumeState, Url,
-    VariantSelection,
+    DownloadState, EngineConfig, EngineError, MediaKind, MediaRequest, ResumeKind, ResumeState, Url,
+    VariantProbeRequest, VariantSelection,
 };
 use prism_testserver::{DashFixture, DashRepresentation, HlsFixture, HlsVariant, ServerConfig};
 
@@ -98,6 +98,94 @@ async fn hls_aes128_byte_ranges_and_audio_rendition() {
         // The key is fetched once, not per segment.
         assert_eq!(srv.stats().requests_to("/hls/key.bin"), 1);
     }
+}
+
+/// A segment host that answers 429 to the player's Referer (Google's content servers do): the
+/// segments are fetched without the page's identity instead of retrying the refused request
+/// until the job fails. Byte ranges and a separate audio track, like the real stream that showed it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn hls_segment_host_refusing_the_referer_is_asked_without_it() {
+    let mut fixture = HlsFixture::synthetic(1, 12, 40_000, 7);
+    fixture.byte_ranges = true;
+    fixture.refuse_referer = true;
+    fixture.audio = Some((0..12).map(|i| Bytes::from(vec![i as u8; 2000 + i])).collect());
+    let srv = server(ServerConfig {
+        hls: Some(fixture.clone()),
+        ..Default::default()
+    })
+    .await;
+    let dir = tempfile::tempdir().unwrap();
+    let mut req = media_request(&srv.url("/hls/master.m3u8"), dir.path(), false);
+    req.referer = Some("https://player.example/".into());
+    req.headers = vec![("Origin".into(), "https://player.example".into())];
+    let h = engine().start_media(req, None, vec![]);
+    let done = wait(&h, 60).await.unwrap();
+    assert_eq!(
+        sha256_file(&done.path),
+        sha256(&fixture.expected_variant_bytes(0))
+    );
+    assert_eq!(
+        std::fs::read(&done.extra_files[0]).unwrap(),
+        fixture.expected_audio_bytes()
+    );
+}
+
+/// A master playlist that names no RESOLUTION still gets a picture size in the quality list: it
+/// is read from the start of the variant's first segment — on a host that refuses the Referer.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn list_variants_reads_the_size_a_playlist_leaves_out() {
+    if !ffmpeg_available() {
+        eprintln!("SKIPPED: ffmpeg not found");
+        return;
+    }
+    let src = tempfile::tempdir().unwrap();
+    ffmpeg(
+        src.path(),
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=duration=4:size=320x240:rate=25",
+            "-c:v",
+            "mpeg2video",
+            "-f",
+            "hls",
+            "-hls_time",
+            "2",
+            "-hls_list_size",
+            "0",
+            "-hls_segment_filename",
+            "seg%d.ts",
+            "index.m3u8",
+        ],
+    );
+    let segments: Vec<Bytes> = sorted_files(src.path(), "seg")
+        .iter()
+        .map(|p| Bytes::from(std::fs::read(p).unwrap()))
+        .collect();
+    let mut fixture = HlsFixture::synthetic(1, 1, 1, 0);
+    fixture.variants[0].resolution = None;
+    fixture.variants[0].segments = segments;
+    fixture.refuse_referer = true;
+    let srv = server(ServerConfig {
+        hls: Some(fixture),
+        ..Default::default()
+    })
+    .await;
+    let probe = VariantProbeRequest {
+        url: Url::parse(&srv.url("/hls/master.m3u8")).unwrap(),
+        kind: MediaKind::Hls,
+        headers: vec![],
+        cookies: None,
+        referer: Some("https://player.example/".into()),
+        user_agent: None,
+        proxy: None,
+    };
+    let variants = prism_engine::list_variants(&EngineConfig::default(), &probe)
+        .await
+        .unwrap();
+    assert_eq!(variants.len(), 1);
+    assert_eq!((variants[0].width, variants[0].height), (Some(320), Some(240)));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -321,6 +409,7 @@ async fn hls_real_stream_encrypted_remux_with_ffmpeg() {
         key: Some([42u8; 16]),
         explicit_iv: None,
         byte_ranges: false,
+        refuse_referer: false,
     };
     let srv = server(ServerConfig {
         hls: Some(fixture),

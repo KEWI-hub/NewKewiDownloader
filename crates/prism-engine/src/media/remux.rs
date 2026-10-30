@@ -74,3 +74,60 @@ pub(crate) async fn mux(ffmpeg: &Path, inputs: &[PathBuf], out: &Path) -> Result
     }
     Ok(())
 }
+
+/// Picture size of the first video stream in `sample` (the start of a media segment), as
+/// ffmpeg reads it. `None` when ffmpeg can't run or finds no video in it.
+pub(crate) async fn picture_size(ffmpeg: &Path, sample: &[u8]) -> Option<(u64, u64)> {
+    use tokio::io::AsyncWriteExt;
+    let mut child = command(ffmpeg)
+        .args(["-hide_banner", "-nostdin", "-i", "pipe:0"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .ok()?;
+    let mut stdin = child.stdin.take()?;
+    // ffmpeg may stop reading once it has seen the stream: a broken pipe is fine.
+    let _ = stdin.write_all(sample).await;
+    drop(stdin);
+    // Without an output ffmpeg exits non-zero, after listing the input's streams.
+    let output = child.wait_with_output().await.ok()?;
+    parse_picture_size(&String::from_utf8_lossy(&output.stderr))
+}
+
+/// Size from ffmpeg's stream listing: `Stream #0:0[0x100]: Video: h264 (High) ([27][0][0][0] /
+/// 0x001B), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 30 fps, …`.
+fn parse_picture_size(log: &str) -> Option<(u64, u64)> {
+    log.lines()
+        .filter(|l| l.contains("Stream #") && l.contains("Video:"))
+        .find_map(|l| {
+            l.split([',', ' ']).find_map(|tok| {
+                let (w, h) = tok.split_once('x')?;
+                let (w, h) = (w.parse::<u64>().ok()?, h.parse::<u64>().ok()?);
+                // Codec tags such as `0x001B` parse too; no real picture is that shape.
+                ((16..=16384).contains(&w) && (16..=16384).contains(&h)).then_some((w, h))
+            })
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_picture_size;
+
+    #[test]
+    fn picture_size_comes_from_the_video_stream_line() {
+        let log = "Input #0, mpegts, from 'pipe:0':\n  Duration: N/A, start: 1.400000, bitrate: N/A\n  \
+            Program 1 \n  Stream #0:0[0x100]: Video: h264 (High) ([27][0][0][0] / 0x001B), \
+            yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 30 fps, 30 tbr, 90k tbn\n  \
+            Stream #0:1[0x101]: Audio: aac (LC) ([15][0][0][0] / 0x000F), 48000 Hz, stereo, fltp\n\
+            At least one output file must be specified\n";
+        assert_eq!(parse_picture_size(log), Some((1920, 1080)));
+    }
+
+    #[test]
+    fn no_video_stream_means_no_size() {
+        let log = "  Stream #0:0[0x101]: Audio: aac (LC) ([15][0][0][0] / 0x000F), 48000 Hz, stereo\n";
+        assert_eq!(parse_picture_size(log), None);
+        assert_eq!(parse_picture_size("pipe:0: Invalid data found when processing input"), None);
+    }
+}

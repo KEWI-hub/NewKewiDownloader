@@ -43,6 +43,9 @@ pub struct HlsFixture {
     pub explicit_iv: Option<[u8; 16]>,
     /// Serve segments as `EXT-X-BYTERANGE` slices of a single `all.ts` resource.
     pub byte_ranges: bool,
+    /// Answer 429 to segment requests that carry a `Referer`, as Google's content servers do
+    /// when a player's page identity reaches them. Playlists and the key are served as usual.
+    pub refuse_referer: bool,
 }
 
 impl HlsFixture {
@@ -67,6 +70,7 @@ impl HlsFixture {
             key: None,
             explicit_iv: None,
             byte_ranges: false,
+            refuse_referer: false,
         }
     }
 

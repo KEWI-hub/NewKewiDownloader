@@ -829,6 +829,12 @@ fn hls_route(state: &State, req: &Request<Incoming>, rest: &str) -> Response<Bod
     let Some((dir, file)) = rest.split_once('/') else {
         return status(StatusCode::NOT_FOUND, "not found");
     };
+    if hls.refuse_referer
+        && !file.ends_with(".m3u8")
+        && req.headers().contains_key(hyper::header::REFERER)
+    {
+        return status(StatusCode::TOO_MANY_REQUESTS, "rate limit exceeded");
+    }
     let (segments, init, ext): (&[Bytes], Option<&Bytes>, &str) = if dir == "audio" {
         match &hls.audio {
             Some(a) => (a, None, "aac"),

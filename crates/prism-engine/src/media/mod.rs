@@ -164,10 +164,26 @@ pub async fn list_variants(
     )?;
     let (text, manifest_url) = fetch_text(&client, &headers, &probe.url).await?;
     let kind = detect_kind(probe.kind, &manifest_url, &text)?;
-    let variants = match kind {
+    let mut variants = match kind {
         MediaKind::Dash => dash::list_variants(&text, &manifest_url)?,
         _ => hls::list_variants(&text, &manifest_url)?,
     };
+    if kind != MediaKind::Dash {
+        // A playlist that names no RESOLUTION would show as a bare "Stream": read the picture
+        // size from the start of the variant's first segment instead.
+        let ffmpeg = remux::ffmpeg_path(cfg.ffmpeg_path.as_deref());
+        for (index, v) in variants.iter_mut().enumerate().take(MAX_SIZE_SAMPLES) {
+            if v.height.is_some() {
+                continue;
+            }
+            if let Some((w, h)) =
+                sample_picture_size(&client, &headers, &manifest_url, &text, index, &ffmpeg).await
+            {
+                v.width = Some(w);
+                v.height = Some(h);
+            }
+        }
+    }
     Ok(variants
         .into_iter()
         .enumerate()
@@ -179,6 +195,54 @@ pub async fn list_variants(
             height: v.height,
         })
         .collect())
+}
+
+/// Variants [`list_variants`] reads a picture size for when the manifest names none.
+const MAX_SIZE_SAMPLES: usize = 4;
+
+/// Bytes read from the start of a segment to find its picture size: the first keyframe, which
+/// carries the stream parameters, opens the segment.
+const SIZE_SAMPLE: u64 = 512 << 10;
+
+/// Picture size of HLS variant `index`, from the start of its first segment. `None` when the
+/// segment is encrypted, can't be fetched, or ffmpeg finds no video in it — the variant then
+/// simply stays without a size.
+async fn sample_picture_size(
+    client: &reqwest::Client,
+    headers: &HeaderMap,
+    manifest_url: &Url,
+    text: &str,
+    index: usize,
+    ffmpeg: &Path,
+) -> Option<(u64, u64)> {
+    let plan = hls::plan(client, headers, manifest_url, text, crate::request::VariantSelection::Index(index))
+        .await
+        .ok()?;
+    let seg = plan.tracks.first()?.segments.first()?.clone();
+    if seg.key.is_some() {
+        return None;
+    }
+    let (start, end) = seg.range.unwrap_or((0, u64::MAX));
+    let range = (start, end.min(start + SIZE_SAMPLE));
+    let (mut resp, _) = send_media_get(client, headers, &seg.url, Some(range), false)
+        .await
+        .ok()?;
+    // A server that ignores the range sends the whole resource: skip to the segment's start.
+    let skip = match resp.status().as_u16() {
+        206 => 0,
+        200 => start,
+        _ => return None,
+    };
+    let mut sample = Vec::with_capacity(SIZE_SAMPLE as usize);
+    let mut seen = 0u64;
+    while (sample.len() as u64) < SIZE_SAMPLE {
+        let Ok(Some(chunk)) = resp.chunk().await else { break };
+        let lo = skip.saturating_sub(seen).min(chunk.len() as u64) as usize;
+        seen += chunk.len() as u64;
+        sample.extend_from_slice(&chunk[lo..]);
+    }
+    sample.truncate(SIZE_SAMPLE as usize);
+    remux::picture_size(ffmpeg, &sample).await
 }
 
 /// Fetches a small text resource (manifest).
@@ -354,10 +418,67 @@ fn seg_file(work_dir: &Path, global: usize) -> PathBuf {
     work_dir.join(format!("seg-{global:06}.bin"))
 }
 
+/// Request headers that tell a server which page a request comes from.
+const PAGE_IDENTITY: [header::HeaderName; 3] = [header::REFERER, header::ORIGIN, header::COOKIE];
+
+/// One GET for media data, with or without the headers that name the page.
+async fn send_media_get_once(
+    client: &reqwest::Client,
+    headers: &HeaderMap,
+    url: &Url,
+    range: Option<(u64, u64)>,
+    anonymous: bool,
+) -> Result<reqwest::Response, EngineError> {
+    let mut headers = headers.clone();
+    if anonymous {
+        for h in &PAGE_IDENTITY {
+            headers.remove(h);
+        }
+    }
+    let mut rb = client.get(url.clone()).headers(headers);
+    if let Some((a, b)) = range {
+        rb = rb.header(header::RANGE, format!("bytes={a}-{}", b - 1));
+    }
+    rb.send().await.map_err(|e| {
+        if e.is_timeout() {
+            EngineError::Timeout
+        } else {
+            EngineError::network(error_chain(&e))
+        }
+    })
+}
+
+/// GET for media data (`range` is `[start, end)`). The page's Referer, Origin and Cookie go
+/// along, as the player sent them — but some segment hosts refuse a request that carries another
+/// site's identity (Google's content servers answer 429 to the player's Referer, and the same
+/// request without it succeeds). A 403 or 429 to a request with those headers is tried once more
+/// without them. A host that really needs the Referer (hotlink protection) fails that second try
+/// too, and the first answer stands. The flag says whether the anonymous try is the one returned.
+async fn send_media_get(
+    client: &reqwest::Client,
+    headers: &HeaderMap,
+    url: &Url,
+    range: Option<(u64, u64)>,
+    anonymous: bool,
+) -> Result<(reqwest::Response, bool), EngineError> {
+    let resp = send_media_get_once(client, headers, url, range, anonymous).await?;
+    let identified = !anonymous && PAGE_IDENTITY.iter().any(|h| headers.contains_key(h));
+    if identified && matches!(resp.status().as_u16(), 403 | 429) {
+        let retry = send_media_get_once(client, headers, url, range, true).await?;
+        if retry.status().is_success() {
+            return Ok((retry, true));
+        }
+    }
+    Ok((resp, anonymous))
+}
+
 /// Shared state of the segment workers.
 struct Fetch {
     client: reqwest::Client,
     headers: HeaderMap,
+    /// Segment hosts that refused the page's identity headers and accepted the request without
+    /// them (see [`Fetch::send_segment`]).
+    anonymous_hosts: Mutex<HashSet<String>>,
     plan: MediaPlan,
     progress: Arc<MediaProgress>,
     queue: Mutex<VecDeque<usize>>,
@@ -398,22 +519,29 @@ impl Fetch {
         Ok(key)
     }
 
+    /// Sends one segment request (see [`send_media_get`]); a host that refused the page's
+    /// identity once gets anonymous requests for the rest of the job.
+    async fn send_segment(&self, seg: &MediaSegment) -> Result<reqwest::Response, EngineError> {
+        let host = seg.url.host_str().unwrap_or_default().to_owned();
+        let anonymous = self
+            .anonymous_hosts
+            .lock()
+            .expect("anonymous hosts")
+            .contains(&host);
+        let (resp, went_anonymous) =
+            send_media_get(&self.client, &self.headers, &seg.url, seg.range, anonymous).await?;
+        if went_anonymous && !anonymous {
+            self.anonymous_hosts
+                .lock()
+                .expect("anonymous hosts")
+                .insert(host);
+        }
+        Ok(resp)
+    }
+
     /// Downloads one segment into memory (rate limited), decrypting if needed.
     async fn download(&self, seg: &MediaSegment) -> Result<Vec<u8>, EngineError> {
-        let mut rb = self
-            .client
-            .get(seg.url.clone())
-            .headers(self.headers.clone());
-        if let Some((a, b)) = seg.range {
-            rb = rb.header(header::RANGE, format!("bytes={a}-{}", b - 1));
-        }
-        let mut resp = rb.send().await.map_err(|e| {
-            if e.is_timeout() {
-                EngineError::Timeout
-            } else {
-                EngineError::network(error_chain(&e))
-            }
-        })?;
+        let mut resp = self.send_segment(seg).await?;
         let status = resp.status().as_u16();
         let skip = match (status, seg.range) {
             (206, Some((a, _))) => {
@@ -799,6 +927,7 @@ async fn run_inner(
     let fetch = Arc::new(Fetch {
         client,
         headers,
+        anonymous_hosts: Mutex::new(HashSet::new()),
         plan: plan.clone(),
         progress: progress.clone(),
         queue: Mutex::new(
