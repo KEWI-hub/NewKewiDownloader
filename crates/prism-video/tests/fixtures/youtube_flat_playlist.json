@@ -1,0 +1,112 @@
+{
+ "id": "UCSMOQeBJ2RAnuFungnQOxLg",
+ "channel": "Blender",
+ "channel_id": "UCSMOQeBJ2RAnuFungnQOxLg",
+ "title": "Blender - Videos",
+ "availability": "public",
+ "channel_follower_count": 1250000,
+ "description": "Official YouTube channel for Blender, the Free and Open Source 3D Creation Suite.\n\nThe Freedom to Create\n",
+ "uploader_id": "@BlenderOfficial",
+ "uploader_url": "https://www.youtube.com/@BlenderOfficial",
+ "channel_is_verified": true,
+ "modified_date": null,
+ "view_count": null,
+ "playlist_count": null,
+ "uploader": "Blender",
+ "channel_url": "https://www.youtube.com/channel/UCSMOQeBJ2RAnuFungnQOxLg",
+ "_type": "playlist",
+ "entries": [
+  {
+   "title": "Blender Conference 2026 Recap",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/sO_lhW8av3U/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDuR0n6G8rK1ByMhmqfiJrLVi3S6A",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/sO_lhW8av3U/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLATSInaX-ioZnhhXqDUbtLJl2MELg",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "duration": 149,
+   "view_count": 13000,
+   "timestamp": null,
+   "live_status": null,
+   "availability": null,
+   "channel_url": null,
+   "uploader_url": null,
+   "creators": null,
+   "ie_key": "Youtube",
+   "id": "sO_lhW8av3U",
+   "_type": "url",
+   "url": "https://www.youtube.com/watch?v=sO_lhW8av3U",
+   "__x_forwarded_for_ip": null
+  },
+  {
+   "title": "The Future of Rendering — BCON26",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/SVJiCL3K0j4/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDVpq4Er8DMMtbv-oTZ72wGsh8tfA",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/SVJiCL3K0j4/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBwSTr0tf5Q-b9ULG9O8BuBqenH-A",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "duration": 1106,
+   "view_count": 26000,
+   "timestamp": null,
+   "live_status": null,
+   "availability": null,
+   "channel_url": null,
+   "uploader_url": null,
+   "creators": null,
+   "ie_key": "Youtube",
+   "id": "SVJiCL3K0j4",
+   "_type": "url",
+   "url": "https://www.youtube.com/watch?v=SVJiCL3K0j4",
+   "__x_forwarded_for_ip": null
+  },
+  {
+   "title": "Subject Extraction for Scene Reconstruction in VFX — BCON26",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/TqP7Hyy_MFo/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBiuXt2LSi-kXlAeiUB5TmrSWnneA",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/TqP7Hyy_MFo/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAK7HC24pG3PS6A8hBrND6Efzem5A",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "duration": 1418,
+   "view_count": 6200,
+   "timestamp": null,
+   "live_status": null,
+   "availability": null,
+   "channel_url": null,
+   "uploader_url": null,
+   "creators": null,
+   "ie_key": "Youtube",
+   "id": "TqP7Hyy_MFo",
+   "_type": "url",
+   "url": "https://www.youtube.com/watch?v=TqP7Hyy_MFo",
+   "__x_forwarded_for_ip": null
+  }
+ ],
+ "extractor_key": "YoutubeTab",
+ "extractor": "youtube:tab",
+ "webpage_url": "https://www.youtube.com/@BlenderOfficial/videos",
+ "original_url": "https://www.youtube.com/@BlenderOfficial/videos",
+ "webpage_url_basename": "videos",
+ "webpage_url_domain": "youtube.com",
+ "release_year": null,
+ "epoch": 1792004498
+}

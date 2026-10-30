@@ -1,0 +1,38 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time! Please check the [troubleshooting guide](https://github.com/FortoGraphy/prism-download-manager/blob/main/docs/guide/browser-extension.md#troubleshooting) first.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, what you saw instead. Screenshots help a lot.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Prism version
+      placeholder: "1.0.0 (Settings → About)"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows 11, Windows 10, macOS (Apple Silicon), macOS (Intel), Ubuntu / Debian, Fedora / RHEL, Arch / other Linux]
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser (if the extension is involved)
+      options: [Not browser related, Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Firefox, Other]
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics (optional)
+      description: Settings → Advanced → Export diagnostics creates a zip with logs (no passwords, no file contents). Attach it here if you can.

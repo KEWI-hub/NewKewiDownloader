@@ -1,0 +1,382 @@
+/* ==========================================================================
+   Prism — Base layer
+   Reset · typography · scrollbars · focus · selection · materials
+   (.glass / .glass-strong / .glass-subtle / .solid / .no-blur) · progress
+   shimmer · reduced motion / transparency.
+   Requires tokens.css (and fonts.css) to be loaded first.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Reset (modern, minimal)
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+* { margin: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  tab-size: 4;
+}
+
+html,
+body { height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-normal);
+  font-feature-settings: var(--font-features);
+  font-optical-sizing: auto;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Desktop app: no rubber-banding, no accidental text selection on chrome. */
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+svg { flex-shrink: 0; }
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button { background: none; border: 0; padding: 0; cursor: default; }
+a { color: var(--text-link); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* Text the user may want to copy (file names, URLs, log output) opts back in. */
+input, textarea, [contenteditable], .selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
+
+table { border-collapse: collapse; border-spacing: 0; }
+[hidden] { display: none !important; }
+
+/* --------------------------------------------------------------------------
+   2. Typography utilities
+   -------------------------------------------------------------------------- */
+.t-display { font-size: var(--text-2xl); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); }
+.t-title   { font-size: var(--text-xl);  font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
+.t-heading { font-size: var(--text-lg);  font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
+.t-body    { font-size: var(--text-base); line-height: var(--leading-snug); }
+.t-body-lg { font-size: var(--text-md); line-height: var(--leading-normal); }
+.t-small   { font-size: var(--text-sm); line-height: var(--leading-snug); }
+.t-caption { font-size: var(--text-xs); line-height: var(--leading-snug); }
+.t-overline {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.t-mono { font-family: var(--font-mono); font-size: 0.94em; letter-spacing: 0; }
+/* Live numbers (speed, size, ETA, %): tabular figures so columns don't jitter. */
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: var(--font-features-num); }
+
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary  { color: var(--text-tertiary); }
+.text-accent    { color: var(--accent); }
+.text-success   { color: var(--success); }
+.text-warning   { color: var(--warning); }
+.text-danger    { color: var(--danger); }
+.text-info      { color: var(--info); }
+
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Middle-truncation is done in JS (keeps the extension visible). */
+
+/* --------------------------------------------------------------------------
+   3. Selection, focus, scrollbars
+   -------------------------------------------------------------------------- */
+::selection { background: rgb(var(--accent-rgb) / 0.32); color: inherit; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: inherit;
+}
+/* Elements that already draw a box-shadow use this ring instead: */
+.focus-ring-inset:focus-visible { box-shadow: inset 0 0 0 2px rgb(var(--accent-rgb) / 0.8); }
+
+/* Thin, overlay-style scrollbars (WebView2/Chromium + WebKitGTK). */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+::-webkit-scrollbar { width: 12px; height: 12px; background: transparent; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--radius-full);
+  min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* --------------------------------------------------------------------------
+   4. Materials
+   --------------------------------------------------------------------------
+   .glass         Frosted chrome: sidebar, toolbar, status bar.
+   .glass-strong  More opaque, deeper shadow + caustic light: dialogs,
+                  popovers, menus, mini window, video quality menu.
+   .glass-subtle  Barely-there frosting for large background panels.
+   .solid         Opaque dense surface (the download table, cards).
+   .solid-raised  Opaque surface one step up (headers, cards on sheets).
+
+   RULES (performance — WebView2 / WebKitGTK):
+   • backdrop-filter is allowed on ≤ ~6 simultaneously visible surfaces,
+     all of them large & mostly static. Never on rows, badges, chips,
+     list items, or anything inside a virtualized list.
+   • Don't animate the size of a .glass element every frame; animate
+     transform/opacity only.
+   • Glass needs something to refract: put it over --bg-ambient (the
+     window canvas) or over scrolling content, never over a flat colour
+     identical to its own tint (it would just look grey).
+
+   Both ::before (specular rim) and ::after (caustic light, strong only)
+   are used by the material. If a component needs its own pseudo
+   elements, wrap its content instead.
+   -------------------------------------------------------------------------- */
+.glass,
+.glass-strong,
+.glass-subtle {
+  --_blur: var(--blur-lg);
+  --_tint: var(--glass-tint);
+  position: relative;
+  isolation: isolate;
+  background-color: var(--_tint);
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: blur(var(--_blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--_blur)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+.glass-strong {
+  --_blur: var(--blur-lg);
+  --_tint: var(--glass-tint-strong);
+  background-image: var(--glass-caustic), var(--glass-sheen);
+}
+
+.glass-subtle {
+  --_blur: var(--blur-md);
+  --_tint: var(--glass-tint-subtle);
+  box-shadow: var(--glass-highlight);
+}
+
+/* Blur-size modifiers */
+.blur-sm { --_blur: var(--blur-sm); }
+.blur-md { --_blur: var(--blur-md); }
+.blur-lg { --_blur: var(--blur-lg); }
+.blur-xl { --_blur: var(--blur-xl); }
+
+/* Specular rim: a 1px gradient border painted with a mask so it follows
+   border-radius. Bright at the top-left (key light), faint at the sides,
+   a little bounce light at the bottom-right. */
+.glass::before,
+.glass-strong::before,
+.glass-subtle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--glass-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* Edge-only variants for docked chrome: a toolbar only needs its bottom
+   edge, a sidebar only its inner (right) edge. */
+.glass.edge-bottom::before { padding: 0 0 1px 0; }
+.glass.edge-top::before    { padding: 1px 0 0 0; }
+.glass.edge-right::before  { padding: 0 1px 0 0; }
+.glass.edge-none::before   { display: none; }
+
+/* Solid surfaces */
+.solid {
+  background: var(--surface-base);
+  box-shadow: var(--shadow-sheet);
+}
+.solid-raised {
+  background: var(--surface-raised);
+  box-shadow: var(--highlight-top), var(--shadow-2);
+}
+.surface-sunken { background: var(--surface-sunken); }
+
+/* The window canvas with its ambient light field (painted once). */
+.canvas {
+  background-color: var(--bg-canvas);
+  background-image: var(--bg-ambient);
+  background-repeat: no-repeat;
+}
+
+/* ---- No-blur fallback --------------------------------------------------
+   Triggered by: <html class="no-blur">, the OS "reduce transparency"
+   preference, or browsers without backdrop-filter. Glass keeps its rim,
+   sheen and shadow (so the hierarchy stays identical) but becomes an
+   almost-opaque tint — visually ~95% the same, ~0% GPU cost.           */
+.no-blur .glass,
+.no-blur .glass-strong,
+.no-blur .glass-subtle {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  --_tint: var(--glass-fallback);
+}
+.no-blur .glass-strong { --_tint: var(--glass-fallback-strong); }
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-strong, .glass-subtle {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    --_tint: var(--glass-fallback);
+  }
+  .glass-strong { --_tint: var(--glass-fallback-strong); }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-strong, .glass-subtle { --_tint: var(--glass-fallback); }
+  .glass-strong { --_tint: var(--glass-fallback-strong); }
+}
+
+/* --------------------------------------------------------------------------
+   5. Progress primitives
+   --------------------------------------------------------------------------
+   <div class="progress" data-state="active" style="--value: 0.62">
+     <div class="progress__fill"></div>
+   </div>
+   data-state: active (shimmer) | paused | queued | completed | error | indeterminate
+   The fill uses transform: scaleX() — compositor-only, no layout per tick.
+   -------------------------------------------------------------------------- */
+.progress {
+  --value: 0;
+  --_h: 4px;
+  --_fill: var(--progress-fill);
+  position: relative;
+  height: var(--_h);
+  border-radius: var(--radius-full);
+  background: var(--track-bg);
+  overflow: hidden;
+  contain: paint;
+}
+.progress--thin { --_h: 3px; }
+.progress--thick { --_h: 6px; }
+.progress--xl { --_h: 10px; }
+
+.progress__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--_fill);
+  transform-origin: left center;
+  transform: scaleX(var(--value));
+  transition: transform var(--dur-progress) var(--ease-linear);
+}
+
+/* Shimmer: a soft highlight travelling across the *filled* part only. It is
+   a child of the fill, so it inherits the fill's scaleX and never leaks
+   into the empty track. transform-only animation → compositor thread. */
+.progress[data-state="active"] .progress__fill { box-shadow: 0 0 10px -1px rgb(var(--accent-rgb) / 0.6); }
+.progress[data-state="active"] .progress__fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.42) 50%,
+      rgb(255 255 255 / 0) 100%);
+  transform: translateX(-100%);
+  animation: prism-shimmer var(--dur-shimmer) var(--ease-in-out) infinite;
+  will-change: transform;
+}
+.progress[data-state="paused"]    { --_fill: rgb(var(--warning-rgb) / 0.85); }
+.progress[data-state="queued"]    { --_fill: rgb(var(--neutral-rgb) / 0.55); }
+.progress[data-state="completed"] { --_fill: rgb(var(--success-rgb) / 0.55); } /* calm: done is not news */
+.progress[data-state="error"]     { --_fill: rgb(var(--danger-rgb) / 0.9); }
+.progress[data-state="indeterminate"] .progress__fill {
+  transform: none;
+  width: 35%;
+  animation: prism-indeterminate 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes prism-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+@keyframes prism-indeterminate {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(300%); }
+}
+/* Soft breathing dot for "downloading" status glyphs. */
+@keyframes prism-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+/* Generic entrances used by dialogs / popovers / toasts. */
+@keyframes prism-pop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes prism-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes prism-spin { to { transform: rotate(360deg); } }
+
+.anim-pop-in  { animation: prism-pop-in var(--dur-base) var(--ease-out) both; }
+.anim-fade-in { animation: prism-fade-in var(--dur-fast) var(--ease-standard) both; }
+.anim-pulse   { animation: prism-pulse var(--dur-pulse) var(--ease-in-out) infinite; }
+.anim-spin    { animation: prism-spin 0.9s linear infinite; }
+
+/* --------------------------------------------------------------------------
+   6. Misc utilities
+   -------------------------------------------------------------------------- */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.drag-region { -webkit-app-region: drag; app-region: drag; }   /* custom title bar */
+.no-drag { -webkit-app-region: no-drag; app-region: no-drag; }
+.divider-h { height: 1px; background: var(--divider); flex: none; }
+.divider-v { width: 1px; align-self: stretch; background: var(--divider); flex: none; }
+
+/* --------------------------------------------------------------------------
+   7. Reduced motion
+   Shimmer, pulse and spinners stop; transitions become near-instant cross
+   fades. Progress still updates (it's information, not decoration).
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .progress[data-state="active"] .progress__fill::after { display: none; }
+  .progress__fill { transition: none; }
+}
+/* App-level override (Settings → Appearance → Reduce motion). */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="prism">
+<head>
+<meta charset="utf-8">
+<title>Prism — Settings</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="../app/src/design/fonts.css">
+<link rel="stylesheet" href="../app/src/design/tokens.css">
+<link rel="stylesheet" href="../app/src/design/base.css">
+<link rel="stylesheet" href="../app/src/design/components.css">
+<link rel="stylesheet" href="assets/windows.css">
+<script src="assets/icons.js"></script>
+<script src="assets/brand.js"></script>
+<style>
+  body, .desktop { width: 1440px; height: 900px; }
+  .settings { left: 180px; top: 70px; width: 1080px; height: 760px; flex-direction: row; }
+  .snav { width: 236px; flex: none; display: flex; flex-direction: column; padding: 0 10px 10px; }
+  .snav .head { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 6px; font-weight: 600; font-size: 14px; }
+  .snav .input { margin: 0 2px 10px; height: 30px; }
+  .snav .side-item { height: 30px; }
+  .snav .grp { height: 8px; }
+  .scontent { flex: 1; display: flex; flex-direction: column; min-width: 0; border-left: 1px solid var(--divider); }
+  .stop { height: 52px; flex: none; display: flex; align-items: center; justify-content: flex-end; }
+  .stop .caption { height: 52px; }
+  .sbody { flex: 1; overflow: hidden; padding: 0 40px 32px; }
+  .sbody h1 { font-size: 22px; letter-spacing: -0.024em; }
+  .sbody .lead { color: var(--text-tertiary); margin: 6px 0 18px; font-size: 13px; }
+  .group { margin-bottom: 14px; }
+  .group__t { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0 0 8px 2px; }
+  .card { border-radius: 12px; background: var(--surface-raised); box-shadow: var(--highlight-top), inset 0 0 0 1px var(--border-subtle); }
+  [data-theme="light"] .card { background: #fff; box-shadow: 0 1px 2px rgb(16 20 40 / .05), inset 0 0 0 1px rgb(16 20 40 / .07); }
+  .srow { display: flex; align-items: center; gap: 16px; min-height: 54px; padding: 9px 16px; }
+  .srow + .srow { border-top: 1px solid var(--divider); }
+  .srow .txt { flex: 1; min-width: 0; }
+  .srow .t1 { font-size: 13px; font-weight: 500; }
+  .srow .t2 { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .themes { display: flex; gap: 14px; padding: 16px; }
+  .tcard { flex: 1; display: grid; gap: 8px; justify-items: start; font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
+  .tprev { width: 100%; height: 92px; border-radius: 10px; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px var(--border-default); }
+  .tcard.on { color: var(--text-primary); }
+  .tcard.on .tprev { box-shadow: 0 0 0 2px var(--accent-solid), 0 0 0 5px rgb(var(--accent-rgb) / .2); }
+  .tprev .sb { position: absolute; left: 6px; top: 6px; bottom: 6px; width: 30%; border-radius: 6px; }
+  .tprev .sh { position: absolute; left: calc(30% + 12px); top: 6px; right: 6px; bottom: 6px; border-radius: 6px; padding: 8px; display: grid; gap: 6px; align-content: start; }
+  .tprev .sh i { height: 6px; border-radius: 3px; display: block; }
+  .tprev .sb i { display: block; height: 5px; border-radius: 3px; margin: 8px 8px 0; }
+  .pv-dark { background: radial-gradient(80% 80% at 0% 0%, rgb(124 120 255 / .45), transparent 70%), #07080b; }
+  .pv-dark .sb { background: rgb(30 31 42 / .8); box-shadow: inset 0 1px 0 rgb(255 255 255 / .15); } .pv-dark .sb i { background: rgb(255 255 255 / .2); }
+  .pv-dark .sh { background: #0d0e13; } .pv-dark .sh i { background: rgb(255 255 255 / .12); } .pv-dark .sh i.a { background: #6461f2; width: 60%; }
+  .pv-light { background: radial-gradient(80% 80% at 0% 0%, rgb(124 120 255 / .35), transparent 70%), #e6e8ee; }
+  .pv-light .sb { background: rgb(255 255 255 / .65); box-shadow: inset 0 1px 0 #fff; } .pv-light .sb i { background: rgb(16 20 40 / .15); }
+  .pv-light .sh { background: #fbfbfd; } .pv-light .sh i { background: rgb(16 20 40 / .1); } .pv-light .sh i.a { background: #5653ea; width: 60%; }
+  .pv-sys { background: linear-gradient(105deg, #e6e8ee 0 50%, #07080b 50% 100%); }
+  .pv-sys .sb { background: rgb(255 255 255 / .7); } .pv-sys .sh { background: linear-gradient(105deg, #fbfbfd 0 36%, #0d0e13 36%); } .pv-sys .sh i { background: rgb(127 127 140 / .3); } .pv-sys .sh i.a { background: #5f5cf0; width: 60%; } .pv-sys .sb i { background: rgb(16 20 40 / .15); }
+  .accents { display: flex; gap: 18px; padding: 16px; }
+  .sw { display: grid; justify-items: center; gap: 8px; font-size: 11.5px; color: var(--text-tertiary); }
+  .sw b { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), inset 0 0 0 1px rgb(0 0 0 / .15); }
+  .sw.on { color: var(--text-primary); font-weight: 500; }
+  .sw.on b { box-shadow: 0 0 0 2px var(--surface-raised), 0 0 0 4px var(--c); }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .slider { width: 160px; height: 4px; border-radius: 2px; background: var(--track-bg); position: relative; }
+  .slider::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 62%; border-radius: 2px; background: var(--accent-solid); }
+  .slider::after { content: ""; position: absolute; left: calc(62% - 8px); top: -6px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .35), 0 0 0 .5px rgb(0 0 0 / .1); }
+</style>
+</head>
+<body>
+<div class="desktop">
+  <div class="window glass-strong settings">
+    <aside class="snav">
+      <div class="head drag-region"><span id="lm"></span>Settings</div>
+      <label class="input">{{s:search}}<input placeholder="Search settings"></label>
+      <div id="nav"></div>
+    </aside>
+    <section class="scontent wbody-solid">
+      <div class="stop drag-region"><div class="caption"><button class="caption__btn">{{w:minimize}}</button><button class="caption__btn caption__btn--close">{{w:close}}</button></div></div>
+      <div class="sbody">
+        <h1>Appearance</h1>
+        <p class="lead">Changes apply instantly. Prism follows your system theme unless you pick one.</p>
+
+        <div class="group"><div class="group__t">Theme</div>
+          <div class="card themes">
+            <div class="tcard"><div class="tprev pv-light"><div class="sb"><i></i><i></i><i></i></div><div class="sh"><i class="a"></i><i></i><i></i><i></i></div></div>Light</div>
+            <div class="tcard on"><div class="tprev pv-dark"><div class="sb"><i></i><i></i><i></i></div><div class="sh"><i class="a"></i><i></i><i></i><i></i></div></div>Dark</div>
+            <div class="tcard"><div class="tprev pv-sys"><div class="sb"><i></i><i></i><i></i></div><div class="sh"><i class="a"></i><i></i><i></i><i></i></div></div>Match system</div>
+          </div>
+        </div>
+
+        <div class="group"><div class="group__t">Accent colour</div>
+          <div class="card accents" id="accents"></div>
+        </div>
+
+        <div class="twocol">
+          <div class="group"><div class="group__t">Materials & motion</div>
+            <div class="card">
+              <div class="srow"><div class="txt"><div class="t1">Liquid glass</div><div class="t2">Frosted, translucent sidebar & toolbars</div></div><span class="switch" aria-checked="true"></span></div>
+              <div class="srow"><div class="txt"><div class="t1">Glass intensity</div><div class="t2">Lower values are more opaque</div></div><span class="slider"></span></div>
+              <div class="srow"><div class="txt"><div class="t1">Reduce motion</div><div class="t2">Stops shimmer & pulse; follows OS by default</div></div><span class="switch" aria-checked="false"></span></div>
+            </div>
+          </div>
+          <div class="group"><div class="group__t">Layout</div>
+            <div class="card">
+              <div class="srow"><div class="txt"><div class="t1">Row density</div><div class="t2">Compact fits ~60% more rows</div></div><div class="segmented segmented--sm"><span class="segmented__item" aria-selected="true">Comfortable</span><span class="segmented__item">Compact</span></div></div>
+              <div class="srow"><div class="txt"><div class="t1">Video thumbnails</div><div class="t2">Show frames for video downloads</div></div><span class="switch" aria-checked="true"></span></div>
+              <div class="srow"><div class="txt"><div class="t1">Interface scale</div><div class="t2">Independent of Windows scaling</div></div><label class="input select" style="width:110px;height:28px"><span class="input__value">100%</span>{{s:chevrons-up-down}}</label></div>
+            </div>
+          </div>
+        </div>
+        <div class="group"><div class="group__t">Typography</div>
+          <div class="card"><div class="srow"><div class="txt"><div class="t1">Interface font</div><div class="t2">Inter is bundled with Prism; numbers always use tabular figures so columns never jitter</div></div><div class="segmented segmented--sm"><span class="segmented__item" aria-selected="true">Inter</span><span class="segmented__item">System</span></div></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+  var navItems = [["settings", "General"], ["sun", "Appearance", 1], ["download", "Downloads"], ["globe", "Connection"], ["speed-limiter", "Speed & queues"], ["all", "Categories"], 0,
+    ["browser", "Browser integration"], ["video", "Video & streams"], ["scheduler", "Scheduler"], ["bell", "Notifications"], ["shield", "Security & antivirus"], ["proxy", "Proxy"], 0, ["options", "Advanced"], ["info", "About Prism"]];
+  document.getElementById("nav").innerHTML = navItems.map(function (n) {
+    return n === 0 ? '<div class="grp"></div>' : '<div class="side-item"' + (n[2] ? ' aria-current="true"' : "") + ">" + icon(n[0], 16) + '<span class="side-item__label">' + n[1] + "</span></div>";
+  }).join("");
+  var light = document.documentElement.dataset.theme === "light";
+  var acc = [["Prism", light ? "#5653ea" : "#6461f2", 1], ["Cyan", light ? "#0b7fa0" : "#36c5e6"], ["Emerald", light ? "#087f53" : "#2fc489"], ["Amber", light ? "#a86200" : "#f2b54a"], ["Rose", light ? "#cf3760" : "#d03a64"], ["Graphite", light ? "#1f2229" : "#e6e8ee"]];
+  document.getElementById("accents").innerHTML = acc.map(function (a) { return '<div class="sw' + (a[2] ? " on" : "") + '" style="--c:' + a[1] + '"><b>' + (a[2] ? icon("check", 16, "", 2.5) : "") + "</b>" + a[0] + "</div>"; }).join("") +
+    '<div style="margin-left:auto;align-self:center;max-width:260px;font-size:12px;color:var(--text-tertiary)">Accent tints selection, focus rings, progress and the window’s ambient light. Status colours never change.</div>';
+  document.body.innerHTML = document.body.innerHTML.replace(/\{\{(\w):([\w-]+)\}\}/g, function (_, k, n) { return k === "s" ? icon(n, 15) : icon(n, 16, "", n === "close" ? 1.4 : 1.25); });
+  document.getElementById("lm").innerHTML = logoMark(20, light);
+  if (light) { var tc = document.querySelectorAll(".tcard"); tc[1].classList.remove("on"); tc[0].classList.add("on"); }
+</script>
+</body>
+</html>

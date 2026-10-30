@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prism — screenshot</title>
+<script src="mk.js"></script>
+<link rel="stylesheet" href="mk.css">
+<script src="../../design/assets/icons.js"></script>
+<script src="../../design/assets/brand.js"></script>
+<style>
+  body, .stage { width: 2400px; height: 1500px; }
+  .copy { position: absolute; left: 130px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; }
+  .copy .brandrow { font-size: 24px; gap: 12px; margin-bottom: 70px; }
+  .copy .brandrow .tile { width: 40px; height: 40px; border-radius: 11px; }
+  .copy .eyebrow { margin-bottom: 22px; }
+  .copy h1 { font-size: 78px; }
+  .copy .lede { font-size: 25px; margin-top: 30px; }
+  .copy ul { list-style: none; padding: 0; margin: 40px 0 0; display: grid; gap: 16px; }
+  .copy li { display: flex; gap: 14px; align-items: flex-start; font-size: 21px; color: var(--text-secondary); line-height: 1.4; }
+  .copy li .icon { color: var(--accent); flex: none; margin-top: 3px; }
+  .rays { opacity: .55; }
+
+  /* browser frame for the video scene */
+  .browser { position: absolute; border-radius: 16px; overflow: hidden; background: #1c1d24; box-shadow: 0 0 0 1px rgb(255 255 255 / .1), 0 60px 140px -30px rgb(0 0 0 / .8); }
+  [data-theme="light"] .browser { background: #f6f7f9; box-shadow: 0 0 0 1px rgb(16 20 40 / .1), 0 60px 120px -30px rgb(40 40 100 / .35); }
+  .bbar { height: 52px; display: flex; align-items: flex-end; gap: 8px; padding: 0 14px; background: #2a2b33; }
+  [data-theme="light"] .bbar { background: #e3e5ea; }
+  .btab { height: 40px; width: 360px; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 10px; padding: 0 14px; font-size: 16px; color: #d9dbe2; background: #1c1d24; white-space: nowrap; overflow: hidden; }
+  [data-theme="light"] .btab { background: #f6f7f9; color: #2b2f38; }
+  .btab i { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(135deg, #2fcbe6, #8b7bff); flex: none; }
+  .btab.off { background: transparent; width: 180px; color: #8b8f99; }
+  .baddr { height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 16px; color: #8b8f99; }
+  .baddr .bar { flex: 1; height: 38px; border-radius: 19px; background: #2a2b33; display: flex; align-items: center; gap: 10px; padding: 0 16px; font-size: 17px; color: #d9dbe2; }
+  [data-theme="light"] .baddr .bar { background: #e6e8ec; color: #2b2f38; }
+  .baddr .ext { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: rgb(124 120 255 / .18); }
+  .bpage { padding: 26px 36px; }
+  .player { position: relative; height: 640px; border-radius: 16px; overflow: hidden;
+    background:
+      radial-gradient(30% 35% at 62% 52%, rgb(255 250 235 / .85), transparent 70%),
+      radial-gradient(90% 55% at 40% 100%, #5e9a3a 0%, transparent 70%),
+      linear-gradient(180deg, #7fbbe8 0%, #c6e6f6 48%, #86b956 50%, #3f6b25 100%); }
+  .player .ctrl { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(transparent, rgb(0 0 0 / .55)); }
+  .player .ctrl i { position: absolute; left: 22px; right: 22px; bottom: 44px; height: 5px; border-radius: 3px; background: rgb(255 255 255 / .35); }
+  .player .ctrl i::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 22%; border-radius: 3px; background: #fff; }
+  .vbtn { position: absolute; right: 22px; top: 22px; display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 18px 0 10px; border-radius: 23px; color: #fff; font-size: 18px; font-weight: 600;
+    background: rgb(20 21 30 / .45); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), inset 0 0 0 1px rgb(255 255 255 / .18), 0 10px 30px rgb(0 0 0 / .35); }
+  .ph1 { height: 26px; width: 70%; border-radius: 7px; background: rgb(255 255 255 / .14); margin-top: 26px; }
+  .ph2 { height: 18px; width: 40%; border-radius: 7px; background: rgb(255 255 255 / .08); margin-top: 14px; }
+  [data-theme="light"] .ph1, [data-theme="light"] .ph2 { background: rgb(16 20 40 / .08); }
+  .ptitle { font-size: 26px; font-weight: 600; margin-top: 24px; color: var(--text-primary); }
+  .pmeta { font-size: 17px; color: var(--text-tertiary); margin-top: 8px; }
+
+  /* desktop scene */
+  .wall { position: absolute; border-radius: 22px; overflow: hidden; box-shadow: 0 0 0 1px rgb(255 255 255 / .08), 0 60px 140px -30px rgb(0 0 0 / .8);
+    background:
+      radial-gradient(40% 55% at 15% 20%, rgb(124 120 255 / .7) 0%, transparent 70%),
+      radial-gradient(35% 45% at 85% 15%, rgb(47 203 230 / .45) 0%, transparent 70%),
+      radial-gradient(45% 50% at 80% 95%, rgb(255 127 143 / .45) 0%, transparent 70%),
+      radial-gradient(40% 45% at 20% 100%, rgb(46 211 169 / .4) 0%, transparent 70%),
+      linear-gradient(160deg, #10122a 0%, #07080e 100%); }
+  [data-theme="light"] .wall { background:
+      radial-gradient(40% 55% at 15% 20%, rgb(150 140 255 / .6) 0%, transparent 70%),
+      radial-gradient(35% 45% at 85% 15%, rgb(80 210 235 / .45) 0%, transparent 70%),
+      radial-gradient(45% 50% at 80% 95%, rgb(255 160 180 / .5) 0%, transparent 70%),
+      radial-gradient(40% 45% at 20% 100%, rgb(110 225 190 / .45) 0%, transparent 70%),
+      linear-gradient(160deg, #eef0f8 0%, #dfe3ee 100%); box-shadow: 0 0 0 1px rgb(16 20 40 / .08), 0 60px 120px -30px rgb(40 40 100 / .35); }
+  .taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: rgb(20 22 32 / .6); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); display: flex; align-items: center; justify-content: center; gap: 14px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .1); }
+  [data-theme="light"] .taskbar { background: rgb(240 242 248 / .7); box-shadow: inset 0 1px 0 rgb(255 255 255 / .8); }
+  .taskbar b { width: 40px; height: 40px; border-radius: 10px; background: rgb(255 255 255 / .12); }
+  [data-theme="light"] .taskbar b { background: rgb(16 20 40 / .08); }
+  .taskbar .on { display: grid; place-items: center; background: linear-gradient(160deg, #2a2b3a, #0b0c12); box-shadow: 0 0 0 2px rgb(124 120 255 / .6); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="aurora"></div>
+  <div class="grid-lines"></div>
+  <div class="rays" id="rays"></div>
+  <div class="copy" id="copy"></div>
+  <div id="scene"></div>
+</div>
+<script>
+  var q = new URLSearchParams(location.search);
+  var key = q.get("shot") || "main";
+  var light = document.documentElement.dataset.theme === "light";
+  var S = {
+    main: {
+      eyebrow: "The main window", title: 'Calm, dense, <span class="prism-text">fast.</span>',
+      lede: "Every download at a glance — live progress, speed and ETA, with a details pane that shows each connection at work.",
+      points: [["activity", "Up to 32 connections per file, tuned automatically"], ["filter", "Categories, queues, filters and instant search"], ["list", "Virtualized list — thousands of rows, no lag"]],
+      scene: '<div class="shot" style="left:760px;top:252px;width:1560px"><img data-shot="main" alt=""></div>',
+    },
+    video: {
+      eyebrow: "Video downloads", title: 'Any video. <span class="prism-text">Up to 8K HDR.</span>',
+      lede: "The browser extension adds a Download button to video pages. Pick a quality and Prism handles the rest.",
+      points: [["hdr", "4K · 8K · HDR · 60 fps, or audio only"], ["subtitle", "Subtitles, chapters and thumbnails embedded"], ["bolt", "Accelerated with Prism’s multi-connection engine"]],
+      scene:
+        '<div class="browser" style="left:740px;top:220px;width:1260px;height:1060px">' +
+        '<div class="bbar"><div class="btab"><i></i>Big Buck Bunny 60fps 4K — Official Blender…</div><div class="btab off">New tab</div></div>' +
+        '<div class="baddr">{{icon:chevron-left:20}}{{icon:chevron-right:20}}{{icon:retry:20}}<div class="bar">{{icon:lock-closed:16:2}} www.youtube.com/watch?v=aqz-KE-bpKQ</div><span class="ext" id="ext"></span></div>' +
+        '<div class="bpage"><div class="player"><div class="ctrl"><i></i></div><div class="vbtn"><span id="vlogo"></span>Download video {{icon:chevron-down:16:2.2}}</div></div>' +
+        '<div class="ptitle">Big Buck Bunny 60fps 4K — Official Blender Foundation Short Film</div><div class="pmeta">Blender Studio · CC BY 3.0</div><div class="ph1"></div><div class="ph2"></div></div></div>' +
+        '<div class="shot shot--tight" style="left:1620px;top:470px;width:680px"><img data-shot="video" alt=""></div>',
+    },
+    scheduler: {
+      eyebrow: "Queues & scheduler", title: 'Set it. Sleep. <span class="prism-text">Done.</span>',
+      lede: "Queues run on the days and hours you choose, stop when the work day starts and put the PC to sleep when finished.",
+      points: [["calendar", "Once, daily or on chosen weekdays"], ["power", "Sleep, hibernate, shut down, lock or run a command"], ["drag-handle", "Reorder files by dragging"]],
+      scene: '<div class="shot" style="left:760px;top:252px;width:1560px"><img data-shot="scheduler" alt=""></div>',
+    },
+    grabber: {
+      eyebrow: "Site grabber", title: 'Crawl a site. <span class="prism-text">Keep what matters.</span>',
+      lede: "Point Prism at a page, set the depth and file types, and download exactly the files you tick.",
+      points: [["globe", "Depth, scope and exclude rules — with login"], ["images", "Presets for images, video, documents, archives"], ["checksum", "Projects are saved, so you can crawl again later"]],
+      scene: '<div class="shot" style="left:760px;top:252px;width:1560px"><img data-shot="grabber" alt=""></div>',
+    },
+    settings: {
+      eyebrow: "Make it yours", title: 'Light, dark, <span class="prism-text">and six accents.</span>',
+      lede: "Two hand-tuned themes, liquid glass you can turn off, compact rows for power users and full keyboard control.",
+      points: [["sun", "Follows your system theme automatically"], ["prism", "Liquid glass with a solid no-blur fallback"], ["list", "Every action has a keyboard shortcut"]],
+      scene: '<div class="shot" style="left:760px;top:252px;width:1560px"><img data-shot="settings" alt=""></div>',
+    },
+    details: {
+      eyebrow: "Download details", title: 'Watch every <span class="prism-text">ray.</span>',
+      lede: "Each connection gets its own lane and colour. Idle connections steal work from slow ones, so the file finishes together.",
+      points: [["activity", "Live lanes, file map and a 60-second speed graph"], ["speed-limiter", "Per-download speed limit and connection count"], ["shield", "Resumable, verified, crash-safe"]],
+      scene:
+        '<div class="shot" style="left:780px;top:175px;width:1240px"><img data-shot="details" alt=""></div>' +
+        '<div class="shot shot--tight" style="left:1860px;top:1185px;width:430px"><img data-shot="mini" alt=""></div>',
+    },
+    desktop: {
+      eyebrow: "Stays out of your way", title: 'Quiet until <span class="prism-text">you need it.</span>',
+      lede: "Downloads from the browser open a compact dialog, finish with a gentle notice, and a mini window keeps watch.",
+      points: [["download", "Download File dialog with size, resume and space checks"], ["mini-mode", "Always-on-top mini window"], ["status-completed", "Completion dialog: open, show in folder, copy path"]],
+      scene:
+        '<div class="wall" style="left:760px;top:160px;width:1560px;height:1180px"><div class="taskbar"><b></b><b></b><b class="on" id="tb"></b><b></b><b></b></div></div>' +
+        '<div class="shot shot--tight" style="left:850px;top:240px;width:720px"><img data-shot="capture" alt=""></div>' +
+        '<div class="shot shot--tight" style="left:1450px;top:850px;width:680px"><img data-shot="complete" alt=""></div>' +
+        '<div class="shot shot--tight" style="left:1880px;top:270px;width:390px"><img data-shot="mini" alt=""></div>',
+    },
+  };
+  var c = S[key];
+  document.getElementById("copy").innerHTML =
+    '<div class="brandrow"><span class="tile" id="tile"></span>Prism</div>' +
+    '<div class="eyebrow">' + c.eyebrow + "</div><h1 class=\"display\">" + c.title + '</h1><p class="lede">' + c.lede + "</p>" +
+    "<ul>" + c.points.map(function (p) { return "<li>{{icon:" + p[0] + ":22}}<span>" + p[1] + "</span></li>"; }).join("") + "</ul>";
+  document.getElementById("scene").innerHTML = c.scene;
+  document.getElementById("rays").innerHTML = raysSvg({ w: 2400, h: 1500, x0: 560, y0: 760, spread: 760, len: 1840, width: 16, blur: 30, opacity: 0.6 });
+  fillIcons();
+  document.getElementById("tile").innerHTML = logoMark(30);
+  ["ext", "vlogo"].forEach(function (id) { var el = document.getElementById(id); if (el) el.innerHTML = logoMark(id === "ext" ? 24 : 26); });
+  var tb = document.getElementById("tb"); if (tb) tb.innerHTML = logoMark(30);
+</script>
+</body>
+</html>

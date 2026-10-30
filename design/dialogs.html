@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="prism">
+<head>
+<meta charset="utf-8">
+<title>Prism — Dialogs</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="../app/src/design/fonts.css">
+<link rel="stylesheet" href="../app/src/design/tokens.css">
+<link rel="stylesheet" href="../app/src/design/base.css">
+<link rel="stylesheet" href="../app/src/design/components.css">
+<link rel="stylesheet" href="assets/windows.css">
+<script src="assets/icons.js"></script>
+<script src="assets/brand.js"></script>
+<script src="assets/mock.js"></script>
+<style>
+  body, .desktop { width: 1440px; height: 1040px; }
+
+  /* ---------- Download File (capture) dialog ---------- */
+  .capture { left: 40px; top: 56px; width: 600px; }
+  .capture .body { padding: 4px 20px 18px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .withbtn .input { min-width: 0; }
+  .row2 > * { min-width: 0; }
+  .filecard { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 12px; background: var(--control-bg); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  .filecard .file-tile { width: 44px; height: 44px; border-radius: 12px; }
+  .filecard .file-tile svg { width: 24px; height: 24px; }
+  .filecard .grow { flex: 1; min-width: 0; display: grid; gap: 6px; }
+  .filecard .fname { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  .filecard .fname .icon { color: var(--text-tertiary); }
+  .filecard .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filecard .big { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; text-align: right; }
+  .filecard .big small { display: block; font-size: 11px; font-weight: 400; color: var(--text-tertiary); letter-spacing: 0; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .withbtn { display: flex; gap: 8px; }
+  .withbtn .input { flex: 1; }
+  .mono { font-family: var(--font-mono); font-size: 12px; }
+  .checks { display: flex; gap: 18px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); }
+  .disclose { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-tertiary); font-weight: 500; }
+  .split { display: inline-flex; }
+  .split .btn:first-child { border-radius: 8px 0 0 8px; }
+  .split .btn:last-child { border-radius: 0 8px 8px 0; width: 28px; padding: 0; margin-left: 1px; }
+
+  /* ---------- Completion dialog ---------- */
+  .done { left: 40px; top: 612px; width: 600px; }
+  .done .top { display: flex; gap: 18px; padding: 22px 22px 16px; align-items: center; }
+  .burst { position: relative; width: 64px; height: 64px; flex: none; display: grid; place-items: center; }
+  .burst::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: conic-gradient(from 200deg, var(--spectrum-1), var(--spectrum-3), var(--spectrum-4), var(--spectrum-6), var(--spectrum-7), var(--spectrum-8), var(--spectrum-1)); filter: blur(14px); opacity: .55; }
+  .burst::after { content: ""; position: absolute; inset: 0; border-radius: 50%; padding: 1.5px; background: conic-gradient(from 200deg, var(--spectrum-1), var(--spectrum-3), var(--spectrum-4), var(--spectrum-6), var(--spectrum-7), var(--spectrum-8), var(--spectrum-1));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .burst span { position: relative; z-index: 1; width: 61px; height: 61px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-overlay); color: var(--success); box-shadow: inset 0 1px 0 rgb(255 255 255 / .1); }
+  .done h2 { font-size: 18px; letter-spacing: -0.02em; }
+  .done .fn { margin-top: 4px; font-size: 13px; color: var(--text-secondary); }
+  .done .meta { margin-top: 6px; font-size: 12px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .done .checksrow { display: grid; gap: 8px; margin: 0 22px 18px; padding: 12px 14px; border-radius: 11px; background: var(--control-bg); box-shadow: inset 0 0 0 1px var(--border-subtle); font-size: 12.5px; }
+  .done .checksrow div { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+  .done .checksrow .icon { color: var(--success); }
+  .done .checksrow .path { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-tertiary); }
+  .done .checksrow .path .icon { color: var(--text-tertiary); }
+
+  /* ---------- Browser + in-page video button / quality menu ---------- */
+  .browser { left: 680px; top: 56px; width: 720px; height: 700px; border-radius: 12px; overflow: hidden; background: #1d1f26; box-shadow: 0 0 0 1px rgb(0 0 0 / .4), var(--shadow-4); }
+  [data-theme="light"] .browser { background: #f3f4f7; box-shadow: 0 0 0 1px rgb(16 20 40 / .1), var(--shadow-4); }
+  .bchrome { height: 76px; background: #2a2c34; display: grid; grid-template-rows: 36px 40px; }
+  [data-theme="light"] .bchrome { background: #e4e6eb; }
+  .btabs { display: flex; align-items: flex-end; padding: 0 8px; gap: 6px; }
+  .btab { white-space: nowrap; overflow: hidden; height: 30px; width: 260px; border-radius: 8px 8px 0 0; background: #1d1f26; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px; color: #cfd2da; }
+  [data-theme="light"] .btab { background: #f3f4f7; color: #3a3f4b; }
+  .btab i { width: 14px; height: 14px; border-radius: 4px; background: linear-gradient(135deg, #ff6a6a, #ff9f43); }
+  .btab.off { background: transparent; color: #8b8f99; }
+  .baddr { display: flex; align-items: center; gap: 10px; padding: 0 10px; background: #1d1f26; color: #8b8f99; }
+  [data-theme="light"] .baddr { background: #f3f4f7; }
+  .baddr .bar { flex: 1; height: 28px; border-radius: 14px; background: #2a2c34; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 12.5px; color: #cfd2da; }
+  [data-theme="light"] .baddr .bar { background: #e4e6eb; color: #3a3f4b; }
+  .baddr .ext { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; background: rgb(124 120 255 / .18); }
+  .page { padding: 20px 24px; }
+  .player { position: relative; height: 362px; border-radius: 12px; background: var(--thumb); }
+  .player .ctrl { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .6)); }
+  .player .ctrl i { position: absolute; left: 14px; right: 14px; bottom: 30px; height: 3px; border-radius: 2px; background: rgb(255 255 255 / .3); }
+  .player .ctrl i::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 34%; border-radius: 2px; background: #ff4e45; }
+  .ph1 { height: 18px; width: 64%; border-radius: 5px; background: rgb(255 255 255 / .12); margin-top: 18px; }
+  .ph2 { height: 12px; width: 38%; border-radius: 5px; background: rgb(255 255 255 / .07); margin-top: 10px; }
+  .ph3 { display: flex; gap: 10px; margin-top: 18px; } .ph3 b { width: 34px; height: 34px; border-radius: 50%; background: rgb(255 255 255 / .1); } .ph3 span { width: 160px; height: 12px; margin-top: 11px; border-radius: 5px; background: rgb(255 255 255 / .08); }
+  [data-theme="light"] .ph1, [data-theme="light"] .ph2, [data-theme="light"] .ph3 b, [data-theme="light"] .ph3 span { background: rgb(16 20 40 / .08); }
+
+  .vbtn { position: absolute; right: 14px; top: 14px; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 8px; border-radius: 17px; color: #fff; font-size: 12.5px; font-weight: 600;
+    background: rgb(20 21 30 / .45); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .25), inset 0 0 0 1px rgb(255 255 255 / .14), 0 6px 20px rgb(0 0 0 / .35); }
+  .vbtn .sep { width: 1px; height: 16px; background: rgb(255 255 255 / .2); }
+  .qmenu { position: absolute; right: 14px; top: 56px; width: 318px; border-radius: 14px; padding: 6px; z-index: 5; }
+  [data-theme="dark"] .qmenu { --_tint: rgb(20 21 30 / .72); }
+  .qhead { display: flex; gap: 10px; padding: 8px 8px 10px; align-items: center; border-bottom: 1px solid var(--divider); margin-bottom: 4px; }
+  .qhead .thumb { width: 56px; height: 32px; }
+  .qhead b { font-size: 12.5px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qhead small { font-size: 11px; color: var(--text-tertiary); }
+  .qopt { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: center; height: 34px; padding: 0 8px; border-radius: 8px; font-size: 12.5px; }
+  .qopt .radio { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+  .qopt.on { background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / .25); }
+  .qopt.on .radio { box-shadow: inset 0 0 0 5px var(--accent-solid); }
+  .qopt .lbl { display: flex; align-items: center; gap: 6px; }
+  .qopt .lbl em { font-style: normal; font-size: 11px; color: var(--text-tertiary); }
+  .qopt .sz { font-size: 11.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .qsec { padding: 8px 8px 4px; font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-tertiary); }
+  .qtoggles { display: grid; gap: 2px; padding: 4px 0; border-top: 1px solid var(--divider); margin-top: 4px; }
+  .qtoggle { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 8px; font-size: 12.5px; color: var(--text-secondary); }
+  .qtoggle span { display: flex; align-items: center; gap: 8px; }
+  .qfoot { display: flex; gap: 6px; padding: 6px 2px 2px; }
+  .qfoot .btn--primary { flex: 1; }
+
+  /* ---------- Mini window + toast ---------- */
+  .mini { left: 1040px; top: 800px; width: 360px; border-radius: 14px; padding: 12px 12px 12px 14px; display: grid; gap: 9px; }
+  .mini .r1 { display: flex; align-items: center; gap: 10px; }
+  .mini .r1 .name { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .mini .r1 .pc { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mini .r2 { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+  .mini .r2 b { color: var(--text-secondary); font-weight: 500; }
+  .mini .r2 .spacer { flex: 1; }
+  .mini .tb-btn { width: 24px; height: 24px; border-radius: 6px; }
+  .mini .file-tile { width: 24px; height: 24px; border-radius: 7px; }
+  .toast { position: absolute; left: 680px; top: 800px; width: 340px; }
+  .toast .t1 { font-size: 13px; font-weight: 500; } .toast .t2 { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .toast .grow { flex: 1; }
+  .toast .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: rgb(var(--success-rgb) / .14); color: var(--success); }
+</style>
+</head>
+<body>
+<div class="desktop">
+  <span class="desk-label" style="left:40px;top:30px">Download File · capture dialog</span>
+  <span class="desk-label" style="left:40px;top:586px">Completion dialog</span>
+  <span class="desk-label" style="left:680px;top:30px">In-browser video button & quality menu</span>
+  <span class="desk-label" style="left:680px;top:774px">Toast</span>
+  <span class="desk-label" style="left:1040px;top:774px">Mini window (always on top)</span>
+
+  <!-- Download File -->
+  <div class="window glass-strong capture">
+    <div class="wtitle drag-region"><span id="lm1"></span><span class="grow" style="color:var(--text-primary);font-weight:600;font-size:13px">Download file</span><div class="caption"><button class="caption__btn caption__btn--close">{{w:close}}</button></div></div>
+    <div class="body">
+      <div class="field"><span class="field__label">Address</span>
+        <div class="withbtn"><label class="input">{{s:link}}<span class="input__value mono">https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso</span></label><button class="btn btn--icon" title="Paste">{{s:clipboard}}</button></div>
+      </div>
+      <div class="filecard">
+        <span class="file-tile" style="--tint: var(--type-program)">{{i:disk-image}}</span>
+        <div class="grow">
+          <div class="fname">ubuntu-24.04.1-desktop-amd64.iso {{s:rename}}</div>
+          <div class="tags"><span class="badge badge--success">{{x:check}}Resumable</span><span class="badge">ISO disk image</span><span class="badge">releases.ubuntu.com</span><span class="badge badge--accent">{{x:bolt}}16 connections</span></div>
+        </div>
+        <div class="big">5.83 GB<small>412 GB free on D:</small></div>
+      </div>
+      <div class="field"><span class="field__label">Save to</span>
+        <div class="withbtn"><label class="input">{{s:folder}}<span class="input__value">D:\Downloads\Programs</span>{{s:chevron-down}}</label><button class="btn">Browse…</button></div>
+      </div>
+      <div class="row2">
+        <div class="field"><span class="field__label">Category</span><label class="input select">{{s:programs}}<span class="input__value">Programs</span>{{s:chevrons-up-down}}</label></div>
+        <div class="field"><span class="field__label">Queue</span><label class="input select">{{s:queue}}<span class="input__value">Main queue · start now</span>{{s:chevrons-up-down}}</label></div>
+      </div>
+      <div class="checks">
+        <label class="check"><span class="checkbox" aria-checked="true">{{c:check}}</span>Remember folder for Programs</label>
+        <label class="check"><span class="checkbox" aria-checked="false"></span>Verify SHA-256 when done</label>
+      </div>
+      <div class="disclose">{{x:chevron-right}}Advanced — connections, speed limit, credentials, mirrors</div>
+    </div>
+    <div class="dialog__footer">
+      <div class="split"><button class="btn">{{s:status-scheduled}}Download later</button><button class="btn">{{x:chevron-down}}</button></div>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost">Cancel</button>
+      <button class="btn btn--primary btn--lg" style="height:32px;font-size:13px">{{s:download}}Start download</button>
+    </div>
+  </div>
+
+  <!-- Completion -->
+  <div class="window glass-strong done">
+    <div class="wtitle drag-region"><span class="grow">Download complete</span><button class="tb-btn">{{s:pin}}</button><div class="caption"><button class="caption__btn caption__btn--close">{{w:close}}</button></div></div>
+    <div class="top">
+      <div class="burst"><span>{{b:check}}</span></div>
+      <div><h2>ubuntu-24.04.1-desktop-amd64.iso</h2>
+        <div class="meta">5.83 GB · finished in 5 min 18 s · average 18.7 MB/s · 16 connections</div></div>
+    </div>
+    <div class="checksrow">
+      <div>{{s:shield}}Scanned with Microsoft Defender — no threats found</div>
+      <div>{{s:checksum}}SHA-256 matches the publisher’s checksum</div>
+      <div class="path">{{s:folder}}D:\Downloads\Programs\ubuntu-24.04.1-desktop-amd64.iso</div>
+    </div>
+    <div class="dialog__footer">
+      <label class="check"><span class="checkbox" aria-checked="false"></span>Don’t show this again</label>
+      <span class="spacer"></span>
+      <button class="btn">{{s:copy}}Copy path</button>
+      <button class="btn">{{s:folder-open}}Show in folder</button>
+      <button class="btn btn--primary">{{s:open-file}}Open</button>
+    </div>
+  </div>
+
+  <!-- Browser with in-page button -->
+  <div class="browser window">
+    <div class="bchrome">
+      <div class="btabs"><div class="btab"><i></i>Northern Lights over Lofoten — Video</div><div class="btab off">New tab</div></div>
+      <div class="baddr">{{s:chevron-left}}{{s:chevron-right}}{{s:retry}}<div class="bar">{{x:lock-closed}}video.example.com/watch/aurora-lofoten-4k</div><span class="ext" id="extlogo"></span></div>
+    </div>
+    <div class="page">
+      <div class="player" id="player">
+        <div class="ctrl"><i></i></div>
+        <div class="vbtn"><span id="lm2"></span>Download video<span class="sep"></span>{{x:chevron-down}}</div>
+        <div class="qmenu glass-strong blur-md" id="qmenu">
+          <div class="qhead"><span class="thumb" id="qthumb"></span><div style="min-width:0"><b>Northern Lights over Lofoten — 4K HDR</b><small>12:41 · video.example.com</small></div></div>
+          <div class="qsec">Video</div>
+          <div class="qopt"><span class="radio"></span><span class="lbl">2160p <span class="badge badge--accent">HDR</span><em>MP4 · AV1</em></span><span class="sz">2.14 GB</span></div>
+          <div class="qopt"><span class="radio"></span><span class="lbl">1440p <em>MP4 · VP9</em></span><span class="sz">1.21 GB</span></div>
+          <div class="qopt on"><span class="radio"></span><span class="lbl">1080p60 <em>MP4 · H.264</em></span><span class="sz">742 MB</span></div>
+          <div class="qopt"><span class="radio"></span><span class="lbl">720p <em>MP4 · H.264</em></span><span class="sz">388 MB</span></div>
+          <div class="qsec">Audio only</div>
+          <div class="qopt"><span class="radio"></span><span class="lbl">M4A <em>AAC 128 kbps</em></span><span class="sz">11.6 MB</span></div>
+          <div class="qtoggles">
+            <div class="qtoggle"><span>{{s:subtitle}}Subtitles · English</span><span class="switch" aria-checked="true"></span></div>
+            <div class="qtoggle"><span>{{s:thumbnail}}Embed thumbnail & chapters</span><span class="switch" aria-checked="false"></span></div>
+          </div>
+          <div class="qfoot"><button class="btn btn--primary">{{s:download}}Download 1080p60</button><button class="btn btn--icon" title="More options">{{s:more}}</button></div>
+        </div>
+      </div>
+      <div class="ph1"></div><div class="ph2"></div>
+      <div class="ph3"><b></b><span></span></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast glass-strong blur-md">
+    <span class="ic">{{s:status-completed}}</span>
+    <div class="grow"><div class="t1">3 downloads finished</div><div class="t2">Main queue is empty · 4.2 GB total</div></div>
+    <button class="btn btn--sm btn--ghost">Show</button>
+  </div>
+
+  <!-- Mini window -->
+  <div class="window glass-strong blur-xl mini">
+    <div class="r1"><span class="file-tile" style="--tint: var(--type-video)">{{x:file-video}}</span><span class="name">Northern Lights over Lofoten — 4K HDR.mp4</span><span class="pc">38%</span></div>
+    <div class="progress" data-state="active" style="--value:.382"><div class="progress__fill"></div></div>
+    <div class="r2"><b>9.6 MB/s</b><span>·</span><span>2m 21s left</span><span>·</span><span>837 MB of 2.14 GB</span><span class="spacer"></span><button class="tb-btn">{{s:pause}}</button><button class="tb-btn">{{s:close}}</button></div>
+  </div>
+</div>
+<script>
+  document.body.innerHTML = document.body.innerHTML.replace(/\{\{(\w):([\w-]+)\}\}/g, function (_, k, n) {
+    return k === "i" ? icon(n, 18) : k === "s" ? icon(n, 15) : k === "x" ? icon(n, 12, "", 2.2) : k === "c" ? icon(n, 12, "", 2.5) : k === "b" ? icon(n, 30, "", 2) : icon(n, 16, "", 1.4);
+  });
+  var light = document.documentElement.dataset.theme === "light";
+  document.getElementById("lm1").innerHTML = logoMark(18, light);
+  document.getElementById("lm2").innerHTML = logoMark(20);
+  document.getElementById("extlogo").innerHTML = logoMark(18, light);
+  document.getElementById("player").style.setProperty("--thumb", MOCK.THUMBS.aurora);
+  document.getElementById("qthumb").style.setProperty("--thumb", MOCK.THUMBS.aurora);
+</script>
+</body>
+</html>

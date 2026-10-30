@@ -1,0 +1,35 @@
+[package]
+name = "prism-native-host"
+description = "Native messaging host bridging the Prism browser extension to the Prism app (plus reusable host-registration library)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "prism_native_host"
+path = "src/lib.rs"
+
+[[bin]]
+name = "prism-native-host"
+path = "src/main.rs"
+required-features = ["host"]
+
+[features]
+# `host` = the relay runtime (HTTP client to the app). The app core only needs
+# the registration/paths/framing modules and can depend on this crate with
+# `default-features = false`.
+default = ["host"]
+host = ["dep:ureq"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+ureq = { version = "3", default-features = false, optional = true }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
+[dev-dependencies]
+tempfile = { workspace = true }

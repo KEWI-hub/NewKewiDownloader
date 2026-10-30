@@ -1,0 +1,253 @@
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { BrandTile } from "../components/LogoMark";
+import { openMenuAt } from "../components/MenuHost";
+import { Sparkline } from "../components/Visuals";
+import { Icon, type IconName } from "../design/icons";
+import { actions, patchSettings } from "../lib/actions";
+import { api, type IntegrationStatus } from "../lib/api";
+import { formatBytes, formatSpeed } from "../lib/format";
+import { t, tr } from "../lib/i18n";
+import { categoryIcon, displayName } from "../lib/present";
+import { Ring } from "../lib/ring";
+import { type AppState, counts, useApp, type View } from "../lib/store";
+import { attempt, useUi } from "../lib/ui";
+
+const same = (a: View, b: View) => a.kind === b.kind && ("id" in a ? a.id : "") === ("id" in b ? b.id : "");
+
+function NavItem({ view, icon, label, extra, onContext }: { view: View; icon: IconName; label: string; extra?: ReactNode; onContext?: (e: React.MouseEvent) => void }) {
+  const current = useApp((s) => same(s.view, view));
+  return (
+    <button
+      type="button"
+      className="side-item"
+      aria-current={current ? "true" : undefined}
+      onClick={() => useApp.getState().setView(view)}
+      onContextMenu={
+        onContext &&
+        ((e) => {
+          e.preventDefault();
+          onContext(e);
+        })
+      }
+    >
+      <Icon name={icon} size={16} />
+      <span className="side-item__label">{label}</span>
+      {extra}
+    </button>
+  );
+}
+
+const Count = ({ n }: { n: number }) => <span className="count">{n}</span>;
+
+export function Sidebar() {
+  const items = useApp((s) => s.items);
+  const c = useMemo(() => counts({ items } as AppState), [items]);
+  const categories = useApp((s) => s.categories);
+  const queues = useApp((s) => s.queues);
+  const projects = useApp((s) => s.grabberProjects);
+  const ui = useUi.getState;
+
+  const categoryMenu = (id: string) => (e: React.MouseEvent) => {
+    const cat = useApp.getState().categories.find((x) => x.id === id);
+    if (!cat) return;
+    openMenuAt({ x: e.clientX, y: e.clientY }, [
+      { label: t("Edit category…"), icon: "rename", onSelect: () => ui().openDialog({ kind: "category", category: cat }) },
+      { label: t("Open folder"), icon: "folder-open", disabled: !cat.saveDir, onSelect: () => cat.saveDir && void attempt(api.openPath(cat.saveDir)) },
+      { separator: true },
+      { label: t("Delete category"), icon: "delete", danger: true, disabled: cat.builtin, onSelect: () => void attempt(api.deleteCategory(cat.id), t("Could not delete the category")) },
+    ]);
+  };
+  const queueMenu = (id: string) => (e: React.MouseEvent) => {
+    const q = useApp.getState().queues.find((x) => x.id === id);
+    if (!q) return;
+    openMenuAt({ x: e.clientX, y: e.clientY }, [
+      q.running
+        ? { label: t("Stop queue"), icon: "stop-queue", onSelect: () => void attempt(api.stopQueue(q.id)) }
+        : { label: t("Start queue"), icon: "start-queue", onSelect: () => void attempt(api.startQueue(q.id)) },
+      { label: t("Edit schedule…"), icon: "scheduler", onSelect: () => ui().openSheet({ kind: "scheduler", queueId: q.id }) },
+      { separator: true },
+      { label: t("Delete queue"), icon: "delete", danger: true, disabled: q.builtin, onSelect: () => void attempt(api.deleteQueue(q.id), t("Could not delete the queue")) },
+    ]);
+  };
+
+  return (
+    <aside className="sidebar glass" aria-label={t("Library")}>
+      <div className="brand" data-tauri-drag-region>
+        <BrandTile size={28} />
+        <span className="brand__name" data-tauri-drag-region>
+          Prism
+        </span>
+      </div>
+      <nav className="nav">
+        <NavItem view={{ kind: "all" }} icon="all" label={t("All downloads")} extra={<Count n={c.all} />} />
+        <NavItem view={{ kind: "status", id: "unfinished" }} icon="unfinished" label={t("Unfinished")} extra={<Count n={c.unfinished} />} />
+        <NavItem view={{ kind: "status", id: "finished" }} icon="finished" label={t("Finished")} extra={<Count n={c.finished} />} />
+
+        <Section title={t("Categories")} onAdd={() => ui().openDialog({ kind: "category" })} addLabel={t("New category")} />
+        {categories.map((cat) => (
+          <NavItem
+            key={cat.id}
+            view={{ kind: "category", id: cat.id }}
+            icon={categoryIcon(cat)}
+            label={displayName(cat.name)}
+            extra={<Count n={c.byCategory[cat.id] ?? 0} />}
+            onContext={categoryMenu(cat.id)}
+          />
+        ))}
+
+        <Section title={t("Queues")} onAdd={() => ui().openSheet({ kind: "scheduler", queueId: "new" })} addLabel={t("New queue")} />
+        {queues.map((q) => (
+          <NavItem
+            key={q.id}
+            view={{ kind: "queue", id: q.id }}
+            icon={q.schedule.enabled && !q.running ? "status-scheduled" : "queue"}
+            label={displayName(q.name)}
+            onContext={queueMenu(q.id)}
+            extra={
+              q.running ? (
+                <span className="q-live" data-tip={t("Running")}>
+                  <span className="status-dot status-dot--live" />
+                  {c.byQueue[q.id] ?? 0}
+                </span>
+              ) : q.schedule.enabled && q.schedule.startTime ? (
+                <span className="q-time" data-tip={t("Next scheduled start")}>
+                  {q.schedule.startTime}
+                </span>
+              ) : (
+                <Count n={c.byQueue[q.id] ?? 0} />
+              )
+            }
+          />
+        ))}
+
+        <Section title={t("Grabber")} onAdd={() => ui().openSheet({ kind: "grabber", projectId: null })} addLabel={t("New grabber project")} />
+        {projects.map((p) => (
+          <NavItem
+            key={p.id}
+            view={{ kind: "grabber", id: p.id }}
+            icon="grabber-project"
+            label={p.name}
+            extra={<Count n={p.results.files?.length ?? 0} />}
+            onContext={(e) =>
+              openMenuAt({ x: e.clientX, y: e.clientY }, [
+                { label: t("Open project…"), icon: "grabber", onSelect: () => ui().openSheet({ kind: "grabber", projectId: p.id }) },
+                { separator: true },
+                { label: t("Delete project"), icon: "delete", danger: true, onSelect: () => void attempt(api.deleteGrabberProject(p.id).then(() => api.grabberProjects()).then((g) => useApp.setState({ grabberProjects: g }))) },
+              ])
+            }
+          />
+        ))}
+        <NavItem
+          view={{ kind: "trash" }}
+          icon="trash"
+          label={t("Trash")}
+          extra={<Count n={c.trash} />}
+          onContext={(e) => openMenuAt({ x: e.clientX, y: e.clientY }, [{ label: t("Empty trash"), icon: "delete", danger: true, disabled: !c.trash, onSelect: () => void attempt(api.emptyTrash(), t("Could not empty the trash")) }])}
+        />
+      </nav>
+      <SpeedCard />
+      <SideFooter />
+    </aside>
+  );
+}
+
+function Section({ title, onAdd, addLabel }: { title: string; onAdd: () => void; addLabel: string }) {
+  return (
+    <div className="side-section">
+      <span className="t-overline">{title}</span>
+      <button type="button" className="side-section__add" aria-label={addLabel} data-tip={addLabel} onClick={onAdd}>
+        <Icon name="plus" size={14} />
+      </button>
+    </div>
+  );
+}
+
+/** Total speed with a 60-sample sparkline (1 sample/s, component-level ring buffer). */
+function SpeedCard() {
+  const ring = useRef(new Ring(60));
+  const [samples, setSamples] = useState<number[]>([]);
+  const limiter = useApp((s) => s.settings?.downloads.speedLimiterEnabled ?? false);
+  const limit = useApp((s) => s.settings?.downloads.speedLimit ?? 0);
+  const active = useApp((s) => Object.values(s.progress).filter((p) => p.speed > 0).length);
+  const [peak, setPeak] = useState(0);
+
+  useEffect(() => {
+    const sample = () => {
+      const total = Object.values(useApp.getState().progress).reduce((sum, p) => sum + (p.speed || 0), 0);
+      ring.current.push(total);
+      setSamples(ring.current.values());
+      setPeak((p) => Math.max(p, total));
+    };
+    sample();
+    const timer = window.setInterval(sample, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const now = samples[samples.length - 1] ?? 0;
+  const [num, unit] = useMemo(() => {
+    const s = formatSpeed(now);
+    if (s === "—") return ["0", "B/s"];
+    const i = s.indexOf(" ");
+    return [s.slice(0, i), s.slice(i + 1)];
+  }, [now]);
+
+  return (
+    <section className="speedcard" aria-label={t("Total speed")}>
+      <div className="speedcard__top">
+        <span className="t-overline">{t("Total speed")}</span>
+        {active > 0 && <span className="badge badge--accent">{t("{count} active", { count: active })}</span>}
+      </div>
+      <div className="speedcard__val tnum">
+        {num}
+        <small>{unit}</small>
+      </div>
+      <Sparkline samples={samples.length > 1 ? samples : [0, 0]} />
+      <div className="speedcard__row">
+        <button type="button" className="linklike" onClick={() => void actions.toggleLimiter()} data-tip={t("Toggle speed limiter")} data-kbd="Ctrl L">
+          <Icon name="speed-limiter" size={13} /> {tr("Limit {limit}", { limit: <b>{limiter ? `${formatBytes(limit)}/s` : t("Off")}</b> })}
+        </button>
+        <span>{tr("Peak {speed}", { speed: <b>{formatSpeed(peak)}</b> })}</span>
+      </div>
+    </section>
+  );
+}
+
+function SideFooter() {
+  const [status, setStatus] = useState<IntegrationStatus | null>(null);
+  const theme = useApp((s) => s.settings?.appearance.theme ?? "system");
+  useEffect(() => {
+    const load = () => void api.integrationStatus().then(setStatus, () => setStatus(null));
+    load();
+    const timer = window.setInterval(load, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const ok = !!status?.extensionConnected;
+  const resolved = document.documentElement.dataset.theme;
+  return (
+    <div className="side-foot">
+      <button
+        type="button"
+        className="side-foot__status"
+        onClick={() => useUi.getState().openSheet({ kind: "settings", section: "browser" })}
+        data-tip={ok ? t("The browser extension is connected") : t("Set up browser integration")}
+      >
+        <Icon name="browser" size={15} />
+        <span className="ellipsis">
+          {tr("Browser {status}", { status: <span className={ok ? "text-success" : "text-warning"}>{status ? (ok ? t("connected") : t("not connected")) : "…"}</span> })}
+        </span>
+      </button>
+      <button
+        type="button"
+        className="tb-btn"
+        aria-label={t("Toggle theme")}
+        data-tip={theme === "dark" ? t("Theme: dark") : theme === "light" ? t("Theme: light") : t("Theme: system")}
+        onClick={() => void patchSettings({ appearance: { theme: resolved === "dark" ? "light" : "dark" } })}
+      >
+        <Icon name={resolved === "dark" ? "moon" : "sun"} size={16} />
+      </button>
+      <button type="button" className="tb-btn" aria-label={t("Settings")} data-tip={t("Settings")} data-kbd="Ctrl ," onClick={() => useUi.getState().openSheet({ kind: "settings" })}>
+        <Icon name="settings" size={16} />
+      </button>
+    </div>
+  );
+}

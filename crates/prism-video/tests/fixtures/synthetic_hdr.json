@@ -1,0 +1,59 @@
+{
+  "_type": "video",
+  "id": "HDRtest0001",
+  "title": "HDR Test: \"Colors\" / 8K?",
+  "uploader": "Prism Test Channel",
+  "channel": "Prism Test Channel",
+  "duration": 120.5,
+  "upload_date": "20260901",
+  "description": "Line one\nLine two; with = signs # and \\ backslash",
+  "thumbnails": [
+    {"url": "https://i.ytimg.com/vi/HDRtest0001/hqdefault.jpg", "width": 480, "height": 360, "preference": -7},
+    {"url": "https://i.ytimg.com/vi_webp/HDRtest0001/maxresdefault.webp", "width": 1280, "height": 720, "preference": -1}
+  ],
+  "webpage_url": "https://www.youtube.com/watch?v=HDRtest0001",
+  "extractor": "youtube",
+  "extractor_key": "Youtube",
+  "is_live": false,
+  "live_status": "not_live",
+  "chapters": [
+    {"start_time": 0.0, "end_time": 30.0, "title": "Intro"},
+    {"start_time": 30.0, "end_time": 90.0, "title": "Main = part"},
+    {"start_time": 90.0, "end_time": 120.5, "title": "Outro"}
+  ],
+  "subtitles": {
+    "en": [
+      {"ext": "json3", "url": "https://www.youtube.com/api/timedtext?v=HDRtest0001&lang=en&fmt=json3", "name": "English"},
+      {"ext": "vtt", "url": "https://www.youtube.com/api/timedtext?v=HDRtest0001&lang=en&fmt=vtt", "name": "English"}
+    ],
+    "cs": [
+      {"ext": "srt", "url": "https://example.com/subs/cs.srt", "name": "Czech"}
+    ],
+    "live_chat": [
+      {"ext": "json", "url": "https://www.youtube.com/live_chat_replay", "protocol": "youtube_live_chat_replay"}
+    ]
+  },
+  "automatic_captions": {
+    "en": [{"ext": "vtt", "url": "https://www.youtube.com/api/timedtext?v=HDRtest0001&lang=en&kind=asr&fmt=vtt", "name": "English (auto)"}],
+    "de": [{"ext": "vtt", "url": "https://www.youtube.com/api/timedtext?v=HDRtest0001&lang=de&kind=asr&tlang=de&fmt=vtt", "name": "German (auto)"}],
+    "de-orig": [{"ext": "vtt", "url": "https://www.youtube.com/api/timedtext?v=HDRtest0001&lang=de-orig&fmt=vtt", "name": "German (Original)"}]
+  },
+  "formats": [
+    {"format_id": "sb0", "ext": "mhtml", "protocol": "mhtml", "vcodec": "none", "acodec": "none", "width": 320, "height": 180, "url": "https://i.ytimg.com/sb/HDRtest0001/storyboard3_L2/M$M.jpg"},
+    {"format_id": "140", "ext": "m4a", "protocol": "https", "vcodec": "none", "acodec": "mp4a.40.2", "abr": 129.5, "tbr": 129.5, "filesize": 1950000, "audio_channels": 2, "language": "en", "language_preference": -1, "format_note": "medium", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=140", "http_headers": {"User-Agent": "Mozilla/5.0 test", "Accept": "*/*"}, "downloader_options": {"http_chunk_size": 10485760}},
+    {"format_id": "140-drc", "ext": "m4a", "protocol": "https", "vcodec": "none", "acodec": "mp4a.40.2", "abr": 131.0, "tbr": 131.0, "filesize": 1970000, "audio_channels": 2, "format_note": "medium, DRC", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=140&drc=1"},
+    {"format_id": "251", "ext": "webm", "protocol": "https", "vcodec": "none", "acodec": "opus", "abr": 140.0, "tbr": 140.0, "filesize": 2100000, "audio_channels": 2, "format_note": "medium", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=251", "http_headers": {"User-Agent": "Mozilla/5.0 test"}, "downloader_options": {"http_chunk_size": 10485760}},
+    {"format_id": "18", "ext": "mp4", "protocol": "https", "vcodec": "avc1.42001E", "acodec": "mp4a.40.2", "width": 640, "height": 360, "fps": 30, "tbr": 500.0, "filesize_approx": 7500000, "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=18"},
+    {"format_id": "137", "ext": "mp4", "protocol": "https", "vcodec": "avc1.640028", "acodec": "none", "width": 1920, "height": 1080, "fps": 30, "tbr": 4000.0, "filesize": 60000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=137", "http_headers": {"User-Agent": "Mozilla/5.0 test"}, "downloader_options": {"http_chunk_size": 10485760}},
+    {"format_id": "248", "ext": "webm", "protocol": "https", "vcodec": "vp9", "acodec": "none", "width": 1920, "height": 1080, "fps": 30, "tbr": 2600.0, "filesize": 39000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=248"},
+    {"format_id": "399", "ext": "mp4", "protocol": "https", "vcodec": "av01.0.08M.08", "acodec": "none", "width": 1920, "height": 1080, "fps": 30, "tbr": 2000.0, "filesize": 30000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=399"},
+    {"format_id": "337", "ext": "webm", "protocol": "https", "vcodec": "vp09.02.51.10.01.09.16.09.00", "acodec": "none", "width": 3840, "height": 2160, "fps": 60, "tbr": 30000.0, "filesize": 450000000, "dynamic_range": "HDR10", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=337"},
+    {"format_id": "701", "ext": "mp4", "protocol": "https", "vcodec": "av01.0.13M.10.0.110.09.16.09.0", "acodec": "none", "width": 3840, "height": 2160, "fps": 60, "tbr": 25000.0, "filesize": 380000000, "dynamic_range": "HDR10", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=701"},
+    {"format_id": "401", "ext": "mp4", "protocol": "https", "vcodec": "av01.0.13M.08", "acodec": "none", "width": 3840, "height": 2160, "fps": 60, "tbr": 18000.0, "filesize": 270000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=401"},
+    {"format_id": "315", "ext": "webm", "protocol": "https", "vcodec": "vp9", "acodec": "none", "width": 3840, "height": 2160, "fps": 60, "tbr": 26000.0, "filesize": 390000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=315"},
+    {"format_id": "571", "ext": "mp4", "protocol": "https", "vcodec": "av01.0.17M.08", "acodec": "none", "width": 7680, "height": 4320, "fps": 60, "tbr": 50000.0, "filesize": 750000000, "dynamic_range": "SDR", "url": "https://rr1---sn-test.googlevideo.com/videoplayback?itag=571"},
+    {"format_id": "hls-720", "ext": "mp4", "protocol": "m3u8_native", "vcodec": "avc1.4d401f", "acodec": "mp4a.40.2", "width": 1280, "height": 720, "fps": 30, "tbr": 2500.0, "url": "https://manifest.googlevideo.com/api/manifest/hls_playlist/itag/95/index.m3u8"},
+    {"format_id": "drm-1080", "ext": "mp4", "protocol": "https", "vcodec": "avc1.640028", "acodec": "none", "width": 1920, "height": 1080, "fps": 60, "tbr": 6000.0, "has_drm": true, "url": "https://example.com/drm.mp4"},
+    {"format_id": "maybe-drm", "ext": "mp4", "protocol": "https", "vcodec": "avc1.640028", "acodec": "none", "width": 1440, "height": 1440, "has_drm": "maybe", "url": "https://example.com/maybe.mp4"}
+  ]
+}

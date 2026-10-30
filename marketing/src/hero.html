@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prism — hero</title>
+<script src="mk.js"></script>
+<link rel="stylesheet" href="mk.css">
+<script src="../../design/assets/icons.js"></script>
+<script src="../../design/assets/brand.js"></script>
+<style>
+  body, .stage { width: 2400px; height: 1000px; }
+  .rays { left: 1000px; top: -120px; opacity: .9; }
+  .copy { position: absolute; left: 140px; top: 118px; width: 820px; }
+  .copy .brandrow { margin-bottom: 52px; }
+  .copy .tile { width: 72px; height: 72px; border-radius: 20px; }
+  h1.display { font-size: 124px; }
+  .lede { font-size: 25px; margin-top: 32px; max-width: 740px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; max-width: 760px; }
+  .ctas { display: flex; align-items: center; gap: 26px; margin-top: 40px; }
+  .ctas small { font-size: 18px; color: var(--text-tertiary); line-height: 1.5; }
+
+  .main { left: 1100px; top: 150px; width: 1220px; transform: perspective(2600px) rotateY(-9deg) rotateX(2deg); transform-origin: 0% 50%; }
+  .details { left: 1010px; top: 560px; width: 500px; transform: perspective(2600px) rotateY(-6deg); }
+  .mini { left: 2010px; top: 70px; width: 330px; }
+  .glow { position: absolute; left: 1250px; top: 180px; width: 1100px; height: 700px; border-radius: 50%; background: radial-gradient(closest-side, rgb(124 120 255 / .45), transparent); filter: blur(40px); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="aurora"></div>
+  <div class="grid-lines"></div>
+  <div class="rays" id="rays"></div>
+  <div class="glow"></div>
+
+  <div class="copy">
+    <div class="brandrow"><span class="tile" id="tile"></span>Prism</div>
+    <h1 class="display">One beam.<br><span class="prism-text">Many rays.</span></h1>
+    <p class="lede">The download manager that splits every file into parallel segments — then keeps every connection busy until the very last byte. Browser capture, video up to 8K HDR, queues and a site grabber, wrapped in liquid glass.</p>
+    <div class="pills">
+      <span class="pill">{{icon:activity:20}} Up to 32 connections</span>
+      <span class="pill">{{icon:shield:20}} Crash-safe resume</span>
+      <span class="pill">{{icon:video:20}} 8K · HDR video</span>
+      <span class="pill">{{icon:browser:20}} Chrome · Edge · Firefox</span>
+    </div>
+    <div class="ctas">
+      <span class="cta">{{icon:download:24:2}} Download Prism</span>
+      <small>Free for Windows & Linux<br>Light & dark · 6 accent colours</small>
+    </div>
+  </div>
+
+  <div class="shot main"><img data-shot="main" alt=""></div>
+  <div class="shot details shot--tight"><img data-shot="details" alt=""></div>
+  <div class="shot mini shot--tight"><img data-shot="mini" alt=""></div>
+</div>
+<script>
+  document.getElementById("tile").innerHTML = logoMark(54);
+  if (document.documentElement.dataset.theme === "light") document.querySelector(".cta").style.color = "#fff";
+  document.getElementById("rays").innerHTML = raysSvg({ w: 1500, h: 1250, x0: 40, y0: 640, spread: 780, len: 1460, width: 18, blur: 30, opacity: 0.85 });
+  fillIcons();
+</script>
+</body>
+</html>

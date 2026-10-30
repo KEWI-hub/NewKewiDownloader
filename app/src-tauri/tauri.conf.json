@@ -1,0 +1,133 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Prism",
+  "mainBinaryName": "prism",
+  "version": "1.1.7",
+  "identifier": "dev.prism.manager",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Prism",
+        "url": "index.html",
+        "width": 1320,
+        "height": 820,
+        "minWidth": 760,
+        "minHeight": 480,
+        "center": true,
+        "decorations": false,
+        "transparent": true,
+        "visible": false,
+        "shadow": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: blob: https: http:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "msi",
+      "deb",
+      "rpm",
+      "appimage",
+      "app",
+      "dmg"
+    ],
+    "publisher": "Prism",
+    "copyright": "Personal use",
+    "category": "Utility",
+    "shortDescription": "Fast multi-connection download manager",
+    "longDescription": "Prism is a fast multi-segment download manager with browser integration, video downloading, queues, a scheduler and a site grabber.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/prism-native-host"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "torrent"
+        ],
+        "name": "BitTorrent file",
+        "description": "BitTorrent metadata file",
+        "mimeType": "application/x-bittorrent",
+        "role": "Viewer"
+      }
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "../../packaging/windows/installer-hooks.nsh",
+        "displayLanguageSelector": false
+      },
+      "wix": {
+        "fragmentPaths": [
+          "../../packaging/windows/native-host.wxs"
+        ],
+        "componentRefs": [
+          "PrismNativeHostRegistration"
+        ]
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "ffmpeg"
+        ],
+        "files": {},
+        "desktopTemplate": "../../packaging/linux/prism.desktop",
+        "postInstallScript": "../../packaging/linux/postinst.sh",
+        "preRemoveScript": "../../packaging/linux/prerm.sh"
+      },
+      "rpm": {
+        "depends": [
+          "/usr/bin/ffmpeg"
+        ],
+        "desktopTemplate": "../../packaging/linux/prism.desktop",
+        "postInstallScript": "../../packaging/linux/postinst.sh",
+        "preRemoveScript": "../../packaging/linux/prerm.sh"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "entitlements": "../../packaging/macos/entitlements.plist",
+      "signingIdentity": "-"
+    },
+    "resources": {
+      "../../extension/build/chromium/": "extension/chromium/",
+      "../../extension/build/firefox/": "extension/firefox/",
+      "../../packaging/linux/README-extension.txt": "extension/README.txt"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY2RUU0OTdFODgyRDc0Q0IKUldUTGRDMklma251Wm82Z3NkUEtFcFFiQURoOEJDT3Q2N3NQZE4rQ2s4UXZyMnRyOVlxRGpmdHMK",
+      "endpoints": [
+        "https://github.com/FortoGraphy/prism-download-manager/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

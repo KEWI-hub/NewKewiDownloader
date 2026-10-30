@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prism — social card</title>
+<script src="mk.js"></script>
+<link rel="stylesheet" href="mk.css">
+<script src="../../design/assets/icons.js"></script>
+<script src="../../design/assets/brand.js"></script>
+<style>
+  body, .stage { width: 1200px; height: 630px; }
+  .copy { position: absolute; left: 72px; top: 70px; width: 520px; }
+  .brandrow { font-size: 26px; gap: 12px; margin-bottom: 44px; }
+  .tile { width: 52px; height: 52px; border-radius: 15px; }
+  h1.display { font-size: 74px; }
+  .lede { font-size: 21px; margin-top: 24px; }
+  .row { display: flex; gap: 10px; margin-top: 34px; flex-wrap: wrap; }
+  .pill { height: 38px; font-size: 15px; padding: 0 14px; }
+  .main { left: 600px; top: 100px; width: 900px; padding: 8px; border-radius: 16px; transform: perspective(1800px) rotateY(-12deg) rotateX(3deg); transform-origin: 0 50%; }
+  .rays { left: 470px; top: -150px; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="aurora"></div>
+  <div class="grid-lines"></div>
+  <div class="rays" id="rays"></div>
+  <div class="shot main"><img data-shot="main-plain" alt=""></div>
+  <div class="copy">
+    <div class="brandrow"><span class="tile" id="tile"></span>Prism</div>
+    <h1 class="display">One beam.<br><span class="prism-text">Many rays.</span></h1>
+    <p class="lede">The multi-connection download manager with browser capture, 8K video and a liquid-glass UI.</p>
+    <div class="row">
+      <span class="pill">{{icon:activity:17}} 32 connections</span>
+      <span class="pill">{{icon:shield:17}} Crash-safe resume</span>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById("tile").innerHTML = logoMark(40);
+  document.getElementById("rays").innerHTML = raysSvg({ w: 900, h: 900, x0: 30, y0: 470, spread: 420, len: 880, width: 12, blur: 20, opacity: 0.8 });
+  fillIcons();
+</script>
+</body>
+</html>

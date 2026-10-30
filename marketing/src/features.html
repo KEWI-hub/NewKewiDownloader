@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prism — features</title>
+<script src="mk.js"></script>
+<link rel="stylesheet" href="mk.css">
+<script src="../../design/assets/icons.js"></script>
+<script src="../../design/assets/brand.js"></script>
+<style>
+  body, .stage { width: 2400px; height: 1500px; }
+  .head { position: absolute; left: 140px; right: 140px; top: 104px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .head h1 { font-size: 84px; max-width: 1300px; }
+  .head p { font-size: 25px; max-width: 640px; text-align: right; }
+  .brandrow { position: absolute; left: 140px; top: 46px; font-size: 24px; gap: 12px; }
+  .brandrow .tile { width: 40px; height: 40px; border-radius: 11px; }
+  .grid { position: absolute; left: 140px; right: 140px; top: 400px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .card {
+    position: relative; height: 500px; border-radius: 26px; overflow: hidden; padding: 0 0 30px;
+    background: linear-gradient(180deg, rgb(255 255 255 / .07), rgb(255 255 255 / .025));
+    -webkit-backdrop-filter: blur(30px) saturate(160%); backdrop-filter: blur(30px) saturate(160%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .16), inset 0 0 0 1px rgb(255 255 255 / .08), 0 30px 60px -30px rgb(0 0 0 / .6);
+    display: flex; flex-direction: column;
+  }
+  [data-theme="light"] .card { background: linear-gradient(180deg, rgb(255 255 255 / .78), rgb(255 255 255 / .55)); box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgb(255 255 255 / .8), 0 30px 60px -30px rgb(40 40 100 / .3); }
+  .vis { position: relative; height: 290px; margin: 14px 14px 0; border-radius: 16px; overflow: hidden; background-color: var(--surface-base); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  .vis::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06); background: linear-gradient(180deg, transparent 70%, rgb(0 0 0 / .18)); pointer-events: none; }
+  [data-theme="light"] .vis::after { background: none; }
+  .txt { padding: 26px 30px 0; }
+  .txt .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-border); margin-bottom: 16px; }
+  .txt h3 { font-size: 27px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .txt p { font-size: 18.5px; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+
+  /* custom visuals */
+  .v-browser { display: grid; place-items: center; background: radial-gradient(80% 80% at 50% 0%, rgb(var(--accent-rgb) / .25), transparent 70%), var(--surface-base); }
+  .flow { display: flex; align-items: center; gap: 18px; }
+  .bchip { display: grid; gap: 8px; }
+  .bchip span { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 16px; border-radius: 12px; font-size: 17px; font-weight: 500; background: var(--control-bg); box-shadow: inset 0 0 0 1px var(--border-default); color: var(--text-secondary); }
+  .arrow { color: var(--accent); }
+  .appchip { width: 120px; height: 120px; border-radius: 30px; }
+  .v-resume { display: grid; align-content: center; gap: 20px; padding: 0 30px; background: radial-gradient(70% 70% at 80% 10%, rgb(46 211 169 / .2), transparent 70%), var(--surface-base); }
+  .v-resume .segbar { height: 16px; border-radius: 6px; }
+  .v-resume .row { display: flex; align-items: center; justify-content: space-between; font-size: 17px; color: var(--text-secondary); }
+  .v-resume .big { font-size: 46px; font-weight: 650; letter-spacing: -0.03em; color: var(--text-primary); }
+  .v-resume .crash { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; font-size: 16px; color: var(--success); background: rgb(var(--success-rgb) / .12); box-shadow: inset 0 0 0 1px rgb(var(--success-rgb) / .25); }
+  .v-split { background: none; }
+  .v-split .half { position: absolute; inset: 0; }
+  .v-split .half.l { clip-path: polygon(0 0, 62% 0, 38% 100%, 0 100%); }
+  .v-split .half.d { clip-path: polygon(62% 0, 100% 0, 100% 100%, 38% 100%); }
+  .v-split .seam { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 6px rgb(var(--accent-rgb) / .9)); }
+  .rays { left: -200px; top: 860px; opacity: .6; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="aurora"></div>
+  <div class="grid-lines"></div>
+  <div class="rays" id="rays"></div>
+  <div class="brandrow"><span class="tile" id="tile"></span>Prism</div>
+  <div class="head">
+    <h1 class="display">Every feature a power user expects. <span class="prism-text">None of the clutter.</span></h1>
+    <p class="lede">A Rust download engine, deep browser integration and a calm, dense interface — in one fast native app.</p>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="vis" data-crop="details" data-region="0,200,490,290"></div>
+      <div class="txt"><div class="ic">{{icon:activity:22}}</div><h3>Dynamic segmentation</h3><p>Up to 32 connections that steal work from each other, so every lane stays busy to the last byte.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis v-browser">
+        <div class="flow">
+          <div class="bchip"><span>{{icon:browser:18}} Chrome</span><span>{{icon:browser:18}} Edge</span><span>{{icon:browser:18}} Firefox</span></div>
+          <span class="arrow">{{icon:arrow-right:34:2}}</span>
+          <span class="tile appchip" id="tile2"></span>
+        </div>
+      </div>
+      <div class="txt"><div class="ic">{{icon:browser:22}}</div><h3>Browser integration</h3><p>Clicks become Prism downloads with cookies and referrer intact. Hold Alt to let the browser keep one.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis" data-crop="video" data-region="0,40,680,300"></div>
+      <div class="txt"><div class="ic">{{icon:hdr:22}}</div><h3>Video up to 8K · HDR</h3><p>Pick any quality or audio-only from thousands of sites; subtitles, chapters and thumbnails embedded.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis" data-crop="scheduler" data-region="500,255,650,380"></div>
+      <div class="txt"><div class="ic">{{icon:scheduler:22}}</div><h3>Queues & scheduler</h3><p>Night queues on chosen days, a stop time, retries — then sleep, shut down or run a command.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis" data-crop="grabber" data-region="290,255,560,300"></div>
+      <div class="txt"><div class="ic">{{icon:grabber:22}}</div><h3>Site grabber</h3><p>Crawl a site by depth and scope, filter by type, then download only what you ticked.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis v-resume">
+        <div class="row"><span class="big">63.9%</span><span class="crash">{{icon:shield:18}} Resumed after power loss</span></div>
+        <div class="segbar" id="segbar"></div>
+        <div class="row"><span>16 segments · synced to disk every 2 s</span><span class="t-mono">If-Range ✓</span></div>
+      </div>
+      <div class="txt"><div class="ic">{{icon:shield:22}}</div><h3>Crash-safe resume</h3><p>Progress is only recorded once it is on disk, so a crash or reboot never corrupts a file.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis" data-crop="main-plain" data-region="0,0,640,384"></div>
+      <div class="txt"><div class="ic">{{icon:prism:22}}</div><h3>Liquid-glass interface</h3><p>Frosted chrome over calm, dense data — fast in WebView2 and WebKitGTK, with a no-blur mode.</p></div>
+    </div>
+    <div class="card">
+      <div class="vis v-split">
+        <div class="half l" data-crop="main-plain" data-theme="light" data-region="240,40,760,456"></div>
+        <div class="half d" data-crop="main-plain" data-theme="dark" data-region="240,40,760,456"></div>
+        <svg class="seam" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="62" y1="0" x2="38" y2="100" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      </div>
+      <div class="txt"><div class="ic">{{icon:sun:22}}</div><h3>Light & dark, six accents</h3><p>Both themes designed from scratch, following your system — plus density and reduced-motion options.</p></div>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById("tile").innerHTML = logoMark(30);
+  document.getElementById("tile2").innerHTML = logoMark(92);
+  document.getElementById("rays").innerHTML = raysSvg({ w: 2900, h: 900, x0: 0, y0: 450, spread: 380, len: 2900, width: 14, blur: 30, opacity: 0.5 });
+  var segs = "", n = 16, f = [1, 1, 1, .9, .7, .8, .6, .75, .55, .65, .5, .7, .45, .6, .4, .55];
+  for (var i = 0; i < n; i++) segs += '<span class="segbar__seg" data-active="' + (f[i] < 1) + '" style="--a:' + i / n + ";--b:" + (i + 1) / n + ";--p:" + f[i] + ";--c:var(--spectrum-" + ((i % 8) + 1) + ')"></span>';
+  document.getElementById("segbar").innerHTML = segs;
+  fillIcons();
+</script>
+</body>
+</html>

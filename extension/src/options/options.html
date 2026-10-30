@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prism — Extension options</title>
+    <link rel="stylesheet" href="ui.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <span id="mark"></span>
+        <div>
+          <h1>Prism browser integration</h1>
+          <p class="muted" id="source-line">Settings follow the Prism app.</p>
+        </div>
+        <span class="spacer"></span>
+        <button class="btn" id="sync" type="button">Sync from Prism</button>
+      </header>
+
+      <form id="form" class="glass card" autocomplete="off">
+        <section class="field toggle">
+          <div><label for="captureEnabled">Capture downloads</label><p class="muted small">Hand matching browser downloads to Prism.</p></div>
+          <label class="switch"><input type="checkbox" id="captureEnabled" /><span></span></label>
+        </section>
+        <section class="field toggle">
+          <div><label for="showVideoButton">Show “Download” button on videos</label><p class="muted small">A floating button appears when you hover a video.</p></div>
+          <label class="switch"><input type="checkbox" id="showVideoButton" /><span></span></label>
+        </section>
+        <section class="field">
+          <label for="bypassKey">Bypass key</label>
+          <p class="muted small">Hold this key while clicking a link to let the browser download it.</p>
+          <select id="bypassKey">
+            <option value="alt">Alt</option>
+            <option value="shift">Shift</option>
+            <option value="ctrl">Ctrl</option>
+            <option value="meta">⌘ / Win</option>
+            <option value="none">None</option>
+          </select>
+        </section>
+        <section class="field">
+          <label for="extensions">File types to capture</label>
+          <p class="muted small">Extensions separated by spaces. Wildcards allowed (e.g. <code>R0*</code>).</p>
+          <textarea id="extensions" rows="4" spellcheck="false"></textarea>
+        </section>
+        <section class="field">
+          <label for="mimeTypes">MIME types to capture</label>
+          <p class="muted small">One per line. Entries ending in <code>/</code>, <code>-</code> or <code>*</code> are prefixes.</p>
+          <textarea id="mimeTypes" rows="5" spellcheck="false"></textarea>
+        </section>
+        <section class="field">
+          <label for="minSize">Minimum size (KB)</label>
+          <p class="muted small">Smaller downloads (when the size is known) stay in the browser. 0 = no limit.</p>
+          <input id="minSize" type="number" min="0" step="1" />
+        </section>
+        <section class="field">
+          <label for="excludedSites">Never capture on these sites</label>
+          <p class="muted small">One per line: <code>example.com</code>, <code>*.example.com</code> or <code>https://example.com/path/*</code>.</p>
+          <textarea id="excludedSites" rows="4" spellcheck="false"></textarea>
+        </section>
+        <section class="field">
+          <label for="videoSites">Sites resolved by Prism (quality picker)</label>
+          <p class="muted small">On these sites the video button asks the app for available formats.</p>
+          <textarea id="videoSites" rows="3" spellcheck="false"></textarea>
+        </section>
+        <footer class="actions">
+          <span id="status" class="muted small" role="status"></span>
+          <span class="spacer"></span>
+          <button class="btn" type="button" id="reset">Reset to defaults</button>
+          <button class="btn primary" type="submit">Save</button>
+        </footer>
+      </form>
+    </div>
+    <script src="options.js"></script>
+  </body>
+</html>

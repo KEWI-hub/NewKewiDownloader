@@ -1,0 +1,20 @@
+[package]
+name = "prism-torrent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "BitTorrent / magnet support for Prism (librqbit wrapper)."
+
+[dependencies]
+librqbit = { version = "9", default-features = false, features = ["default-tls"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+bytes = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+sha1 = { workspace = true }

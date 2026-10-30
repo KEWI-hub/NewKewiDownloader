@@ -1,0 +1,75 @@
+name: Download badge
+
+# Keeps the README download badge in step with the real count. GitHub runs scheduled workflows
+# in this repository only every few hours, so the badge fell hours behind after a release (2.3k
+# while the count was already 2.6k). Instead, each run of this workflow waits 10 minutes in the
+# "badge-timer" environment (a wait timer, so no runner is held while waiting), redeploys the
+# site when the badge text would change, and starts the next run. The schedule only restarts
+# that loop when no run is waiting (after a runner failure or a GitHub outage).
+#
+# One-time setup in the public repository (without the wait timer the loop stops after a run):
+#   gh api -X PUT repos/FortoGraphy/prism-download-manager/environments/badge-timer -F wait_timer=10
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 */2 * * *"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  start:
+    name: Restart the loop
+    if: github.event_name == 'schedule' && github.repository == 'FortoGraphy/prism-download-manager'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start a run unless one is already waiting
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow badge-refresh.yml --event workflow_dispatch --limit 20 \
+            --json status --jq '[.[] | select(.status != "completed")] | length')
+          echo "waiting or running: $active"
+          if [ "$active" = 0 ]; then gh workflow run badge-refresh.yml --repo "$GITHUB_REPOSITORY"; fi
+
+  tick:
+    name: Check the badge
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'FortoGraphy/prism-download-manager'
+    runs-on: ubuntu-latest
+    environment:
+      name: badge-timer
+      deployment: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/downloads-badge.sh
+          sparse-checkout-cone-mode: false
+      - name: Redeploy the site when the badge is out of date
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(bash scripts/downloads-badge.sh "$GITHUB_REPOSITORY")
+          shown=$(curl -fsS "https://prismdl.site/downloads.json?t=$(date +%s)" | jq -r .message) || shown=""
+          echo "downloads now: ${count:-?}, badge shows: ${shown:-?}"
+          if [ -n "$count" ] && [ "$count" != "$shown" ]; then gh workflow run pages.yml --repo "$GITHUB_REPOSITORY"; fi
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Without a wait timer the next run would start at once: stop instead of spinning.
+          wait=$(gh api "repos/$GITHUB_REPOSITORY/environments/badge-timer" \
+            --jq '[.protection_rules[]? | select(.type == "wait_timer") | .wait_timer] | first // 0') || wait=10
+          if [ "${wait:-0}" -lt 5 ]; then
+            echo "::warning::The badge-timer environment has no wait timer (see the top of badge-refresh.yml); the loop stops."
+            exit 0
+          fi
+          # One loop only: when another run is already waiting, this one ends here.
+          others=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow badge-refresh.yml --event workflow_dispatch --limit 20 \
+            --json databaseId,status --jq "[.[] | select(.status != \"completed\" and .databaseId != $GITHUB_RUN_ID)] | length") || others=0
+          if [ "$others" = 0 ]; then
+            gh workflow run badge-refresh.yml --repo "$GITHUB_REPOSITORY" || { sleep 30; gh workflow run badge-refresh.yml --repo "$GITHUB_REPOSITORY"; }
+          fi

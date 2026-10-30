@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="prism">
+<head>
+<meta charset="utf-8">
+<title>Prism — Icons</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="../app/src/design/fonts.css">
+<link rel="stylesheet" href="../app/src/design/tokens.css">
+<link rel="stylesheet" href="../app/src/design/base.css">
+<script src="assets/icons.js"></script>
+<style>
+  body { background: var(--bg-canvas); padding: 40px 48px 56px; user-select: text; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+  header h1 { font-size: 26px; letter-spacing: var(--tracking-display); }
+  header p { color: var(--text-secondary); margin-top: 6px; }
+  .meta { display: flex; gap: 18px; color: var(--text-tertiary); font-size: 12px; }
+  .meta b { color: var(--text-secondary); font-weight: 500; }
+  section { margin-bottom: 26px; }
+  h2 { font-size: 11px; font-weight: 600; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+  .cell {
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+    padding: 16px 6px 10px; border-radius: var(--radius-lg);
+    background: var(--surface-base); box-shadow: var(--shadow-sheet);
+    color: var(--text-primary);
+  }
+  .cell .sizes { display: flex; align-items: center; gap: 12px; color: var(--text-secondary); }
+  .cell .big { position: relative; width: 48px; height: 48px; }
+  .cell .big svg { width: 48px; height: 48px; }
+  .cell .big::before { /* keyline grid */
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px) 0 0 / 4px 4px,
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px) 0 0 / 4px 4px;
+    opacity: .0; border-radius: 4px;
+  }
+  .grid-on .cell .big::before { opacity: 1; }
+  .cell label { font-size: 10.5px; color: var(--text-tertiary); text-align: center; line-height: 1.2; word-break: break-word; }
+  .strip { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px 16px; border-radius: var(--radius-lg); background: var(--surface-base); box-shadow: var(--shadow-sheet); color: var(--text-secondary); }
+  .strip.accent { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Prism Icons</h1>
+    <p>Original set · 24 × 24 grid · 1.75 stroke · round caps & joins · currentColor</p>
+  </div>
+  <div class="meta"><span><b id="count"></b> icons</span><span>Shown at <b>48</b> · <b>24</b> · <b>18</b> · <b>16</b> px</span></div>
+</header>
+<div id="root"></div>
+<section>
+  <h2>16 px in context — secondary text colour</h2>
+  <div class="strip" id="strip16"></div>
+</section>
+<section>
+  <h2>14 px — accent</h2>
+  <div class="strip accent" id="strip14"></div>
+</section>
+<script>
+  var G = window.PRISM_ICON_GROUPS, root = document.getElementById("root"), total = 0;
+  var titles = { toolbar: "Toolbar", categories: "Categories", files: "File types", status: "Download status", actions: "Actions & system", window: "Window & navigation", media: "Media" };
+  Object.keys(G).forEach(function (g) {
+    var s = document.createElement("section");
+    s.innerHTML = "<h2>" + (titles[g] || g) + "</h2>";
+    var grid = document.createElement("div"); grid.className = "grid";
+    G[g].forEach(function (n) {
+      total++;
+      grid.insertAdjacentHTML("beforeend",
+        '<div class="cell"><div class="big">' + icon(n, 48) + '</div><div class="sizes">' + icon(n, 24) + icon(n, 18) + icon(n, 16) + "</div><label>" + n + "</label></div>");
+    });
+    s.appendChild(grid); root.appendChild(s);
+  });
+  document.getElementById("count").textContent = total;
+  var all = Object.keys(window.PRISM_ICONS).sort();
+  document.getElementById("strip16").innerHTML = all.map(function (n) { return icon(n, 16); }).join("");
+  document.getElementById("strip14").innerHTML = all.map(function (n) { return icon(n, 14, "", 2); }).join("");
+  if (location.search.indexOf("grid") >= 0) document.body.classList.add("grid-on");
+</script>
+</body>
+</html>

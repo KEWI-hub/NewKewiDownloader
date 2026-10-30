@@ -1,0 +1,94 @@
+{
+  "{count} segments": {
+    "one": "{count} segment",
+    "other": "{count} segments"
+  },
+  "+ {count} more connections": {
+    "one": "+ {count} more connection",
+    "other": "+ {count} more connections"
+  },
+  "{count} downloads restored": {
+    "one": "{count} download restored",
+    "other": "{count} downloads restored"
+  },
+  "{count} links copied": {
+    "one": "{count} link copied",
+    "other": "{count} links copied"
+  },
+  "{count} conn": {
+    "one": "{count} conn",
+    "other": "{count} conn"
+  },
+  "{count} downloads will be removed from the list.": {
+    "one": "{count} download will be removed from the list.",
+    "other": "{count} downloads will be removed from the list."
+  },
+  "{count} downloads will move to the trash. You can restore it from there.": {
+    "one": "{count} download will move to the trash. You can restore it from there.",
+    "other": "{count} downloads will move to the trash. You can restore it from there."
+  },
+  "… {count} files …": {
+    "one": "… {count} file …",
+    "other": "… {count} files …"
+  },
+  "Applies to {count} downloads.": {
+    "one": "Applies to {count} download.",
+    "other": "Applies to {count} downloads."
+  },
+  "Review {count} files": {
+    "one": "Review {count} file",
+    "other": "Review {count} files"
+  },
+  "{count} downloads added": {
+    "one": "{count} download added",
+    "other": "{count} downloads added"
+  },
+  "{files} on {count} pages": {
+    "one": "{files} on {count} page",
+    "other": "{files} on {count} pages"
+  },
+  "{count} files": {
+    "one": "{count} file",
+    "other": "{count} files"
+  },
+  "{count} at a time": {
+    "one": "{count} at a time",
+    "other": "{count} at a time"
+  },
+  "{count} downloads imported": {
+    "one": "{count} download imported",
+    "other": "{count} downloads imported"
+  },
+  "{count} active": {
+    "one": "{count} active",
+    "other": "{count} active"
+  },
+  "{count} items": {
+    "one": "{count} item",
+    "other": "{count} items"
+  },
+  "{count} downloading": {
+    "one": "{count} downloading",
+    "other": "{count} downloading"
+  },
+  "{count} in progress": {
+    "one": "{count} in progress",
+    "other": "{count} in progress"
+  },
+  "Playlist · {count} videos": {
+    "one": "Playlist · {count} video",
+    "other": "Playlist · {count} videos"
+  },
+  "Download {count} videos": {
+    "one": "Download {count} video",
+    "other": "Download {count} videos"
+  },
+  "{count} of {total} selected": {
+    "one": "{count} of {total} selected",
+    "other": "{count} of {total} selected"
+  },
+  "{count} downloads and their files will be deleted. The files can't be restored.": {
+    "one": "{count} download and its file will be deleted. The file can't be restored.",
+    "other": "{count} downloads and their files will be deleted. The files can't be restored."
+  }
+}

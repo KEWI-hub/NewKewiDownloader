@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Linux system packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev ffmpeg
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Rust tests (engine, core, video, torrent, native host)
+        run: cargo test --workspace --exclude prism-app
+      - name: Frontend deps
+        run: |
+          npm ci --prefix app
+          npm ci --prefix extension
+      - name: Frontend + extension build (both needed by tauri-build)
+        run: |
+          npm run build --prefix app
+          npm run build --prefix extension
+      - name: Sidecar (debug)
+        run: node scripts/build-sidecar.mjs --debug
+      - name: Clippy (whole workspace incl. app shell)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: App typecheck + tests
+        run: |
+          npm run typecheck --prefix app
+          npm test --prefix app
+      - name: Extension typecheck + tests
+        run: |
+          npm run typecheck --prefix extension
+          npm test --prefix extension

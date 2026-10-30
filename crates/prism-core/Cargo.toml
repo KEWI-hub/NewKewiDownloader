@@ -1,0 +1,50 @@
+[package]
+name = "prism-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Prism application core: download manager, storage, queues, scheduler, browser IPC, video and site grabber."
+
+[dependencies]
+prism-engine = { workspace = true }
+prism-video = { workspace = true }
+prism-torrent = { path = "../prism-torrent" }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+reqwest = { workspace = true, features = ["cookies", "form", "json"] }
+url = { workspace = true }
+percent-encoding = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+regex = { workspace = true }
+sha2 = { workspace = true }
+rusqlite = { version = "0.40", features = ["bundled"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+dirs = "7"
+scraper = "0.27"
+arboard = { version = "3.6", default-features = false }
+getrandom = "0.4"
+hex = "0.4"
+parking_lot = "0.12"
+fs4 = { version = "1.1", features = ["sync"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Power", "Win32_System_Shutdown", "Win32_Security", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging", "Win32_System_RemoteDesktop", "Win32_System_DataExchange"] }
+winreg = "0.56"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPasteboard"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSEnumerator", "NSString"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+prism-testserver = { path = "../prism-testserver" }

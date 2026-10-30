@@ -1,0 +1,79 @@
+name: Website (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  # Refreshes the README badge data (site/release.json, downloads.json, tests.json): after CI and
+  # release builds finish, and when badge-refresh.yml sees the download badge is out of date.
+  # The schedule is only a fallback: GitHub runs it here every few hours, not every 15 minutes.
+  workflow_run:
+    workflows: ["CI", "Release builds"]
+    types: [completed]
+  schedule:
+    - cron: "8,23,38,53 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy site/
+    # The badge refreshes only in the public repository.
+    if: (github.event_name != 'schedule' && github.event_name != 'workflow_run') || github.repository == 'FortoGraphy/prism-download-manager'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/configure-pages@v5
+      - name: Drop build-only files
+        run: rm -rf site/tools
+      - name: Data for the README badges
+        # The badges read these files as shields.io endpoints, so they need no GitHub API token at
+        # shields.io (its token pool sometimes runs dry and the badge shows an error instead).
+        # When a lookup fails, the published file stays.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          badge() { # file label message color
+            printf '{"schemaVersion":1,"label":"%s","message":"%s","color":"%s","cacheSeconds":300}\n' "$2" "$3" "$4" > "site/$1"
+          }
+          keep() { curl -fsS "https://prismdl.site/$1" -o "site/$1" || true; }
+
+          # Latest release, as shields.io's github/v/release showed it.
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName) || tag=""
+          if [ -n "$tag" ]; then badge release.json release "$tag" 7c5cff; else keep release.json; fi
+
+          # Downloads: which files count and the rounding are in scripts/downloads-badge.sh.
+          downloads=$(bash scripts/downloads-badge.sh "$GITHUB_REPOSITORY") || downloads=""
+          if [ -n "$downloads" ]; then badge downloads.json downloads "$downloads" 3fb8ff; else keep downloads.json; fi
+
+          # The latest finished CI run on main (cancelled runs were superseded by a newer push).
+          ci=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main --limit 20 --json status,conclusion \
+            --jq '[.[] | select(.status == "completed" and (.conclusion == "success" or .conclusion == "failure"))][0].conclusion // ""') || ci=""
+          case "$ci" in
+            success) badge tests.json tests passing brightgreen ;;
+            failure) badge tests.json tests failing red ;;
+            *) keep tests.json ;;
+          esac
+
+          cat site/release.json site/downloads.json site/tests.json || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,506 @@
+/* ==========================================================================
+   Prism — Design Tokens
+   --------------------------------------------------------------------------
+   Single source of truth for colour, type, spacing, radii, elevation, glass
+   materials and motion. Import once, before base.css:
+
+     import "./design/fonts.css";
+     import "./design/tokens.css";
+     import "./design/base.css";
+
+   Theme & accent are selected with attributes on <html>:
+
+     <html data-theme="dark" data-accent="prism" data-density="comfortable">
+
+     data-theme    dark | light                     (required; dark is default)
+     data-accent   prism | cyan | emerald | amber | rose | graphite
+     data-density  comfortable | compact            (table row heights)
+
+   Glass can be disabled with  <html class="no-blur">  (user setting, weak GPU,
+   remote desktop) and is disabled automatically under
+   `prefers-reduced-transparency: reduce` (see base.css).
+
+   Naming: --{group}-{role}[-{variant}]. Components must use *semantic*
+   tokens (e.g. --text-secondary, --surface-raised), never raw hex values.
+   Full documentation: docs/design-system.md
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Theme-independent tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* ---- Typography ------------------------------------------------------ */
+  --font-sans: "Inter Variable", "Inter", "Segoe UI Variable Text", "Segoe UI",
+    system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "Cascadia Mono",
+    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Type scale (px — the UI is a dense desktop tool, sizes are absolute).  */
+  --text-2xs: 10px;   /* micro labels, kbd hints                            */
+  --text-xs: 11px;    /* section captions (caps), badges, status bar        */
+  --text-sm: 12px;    /* secondary row text, table header, tooltips         */
+  --text-base: 13px;  /* DEFAULT UI text: rows, menus, inputs, buttons      */
+  --text-md: 14px;    /* dialog body, emphasized rows                       */
+  --text-lg: 16px;    /* dialog titles                                      */
+  --text-xl: 20px;    /* page titles                                        */
+  --text-2xl: 26px;   /* hero numbers (speed readouts)                      */
+  --text-3xl: 34px;   /* marketing / onboarding                             */
+
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 680;
+
+  /* Inter tracking: tighten as size grows; open caps up. */
+  --tracking-normal: -0.006em;
+  --tracking-tight: -0.014em;   /* 16–20px */
+  --tracking-display: -0.024em; /* ≥ 24px  */
+  --tracking-caps: 0.06em;      /* UPPERCASE captions */
+
+  /* Inter OpenType features used across the UI. cv11 = single-storey a is
+     NOT used; we keep defaults but enable disambiguation + tabular nums
+     where numbers change live (.tnum utility in base.css).                */
+  --font-features: "cv05" 1, "cv08" 1, "ss03" 1; /* l with tail, upper-case-0 slash, round quotes */
+  --font-features-num: "tnum" 1, "cv05" 1, "zero" 0;
+
+  /* ---- Spacing (4 px grid, 2 px half-steps for dense controls) ---------- */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-0_5: 2px;
+  --space-1: 4px;
+  --space-1_5: 6px;
+  --space-2: 8px;
+  --space-2_5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius-xs: 4px;    /* badges, kbd, progress bars                        */
+  --radius-sm: 6px;    /* small buttons (24px), chips, checkboxes            */
+  --radius-md: 8px;    /* controls (30px), rows, menu items                 */
+  --radius-lg: 12px;   /* panels, popovers, file tiles, the content sheet    */
+  --radius-xl: 16px;   /* dialogs, floating windows                          */
+  --radius-2xl: 22px;  /* app icon tile / hero cards                         */
+  --radius-full: 999px;
+
+  /* Semantic radii — prefer these in components. */
+  --radius-control: var(--radius-md);
+  --radius-row: var(--radius-md);
+  --radius-panel: var(--radius-lg);
+  --radius-dialog: var(--radius-xl);
+  --radius-menu: 10px;
+  --radius-menu-item: 6px;
+
+  /* ---- Layout metrics --------------------------------------------------- */
+  --titlebar-h: 40px;
+  --toolbar-h: 52px;
+  --sidebar-w: 236px;
+  --sidebar-w-collapsed: 60px;
+  --statusbar-h: 30px;
+  --window-gutter: 8px;     /* gap between glass sidebar and content sheet */
+  --table-header-h: 32px;
+  --control-h-xs: 22px;
+  --control-h-sm: 26px;
+  --control-h: 30px;        /* default button / input height               */
+  --control-h-lg: 36px;     /* dialog primary actions                       */
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 18px;          /* default toolbar icon                          */
+  --icon-lg: 20px;
+  --icon-xl: 24px;
+
+  /* Row heights (overridden by data-density) */
+  --row-h: 44px;
+  --row-h-comfortable: 44px;
+  --row-h-compact: 30px;
+
+  /* ---- Z-index ---------------------------------------------------------- */
+  --z-base: 0;
+  --z-raised: 1;
+  --z-sticky: 10;      /* table header                                     */
+  --z-chrome: 20;      /* toolbar, status bar (glass over scrolling list)  */
+  --z-sidebar: 30;
+  --z-dropdown: 100;
+  --z-popover: 200;
+  --z-tooltip: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 410;
+  --z-toast: 500;
+  --z-drag: 600;
+  --z-max: 1000;
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --dur-instant: 80ms;   /* press feedback, checkbox tick                    */
+  --dur-fast: 140ms;     /* hover, colour changes, tooltips in               */
+  --dur-base: 200ms;     /* menus, popovers, segmented control thumb         */
+  --dur-slow: 320ms;     /* dialogs, panels, sidebar collapse                */
+  --dur-slower: 480ms;   /* completion celebration, onboarding               */
+  --dur-progress: 250ms; /* progress-bar width tween == engine tick (4 Hz)   */
+  --dur-shimmer: 1.8s;   /* active progress shimmer loop                     */
+  --dur-pulse: 2.4s;     /* "downloading" status pulse                       */
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);       /* most UI transitions   */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* entrances (expo-out)  */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);              /* exits                 */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);      /* looping / shimmer     */
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);   /* toggles, thumbs (gentle overshoot) */
+  --ease-linear: linear;
+
+  /* ---- Blur levels (backdrop-filter) ------------------------------------
+     Only used by the .glass* materials, and only on a handful of large,
+     mostly-static surfaces (sidebar, toolbar, status bar, dialogs, menus).
+     NEVER on table rows, list items, badges or anything repeated.         */
+  --blur-sm: 12px;   /* menus, tooltips, popovers                          */
+  --blur-md: 24px;   /* toolbar / status bar over scrolling content         */
+  --blur-lg: 40px;   /* sidebar, dialogs                                    */
+  --blur-xl: 64px;   /* floating mini window over arbitrary desktops        */
+  --glass-saturate: 170%;
+
+  /* ---- Prism spectrum ----------------------------------------------------
+     The brand signature: one beam split into many. Used for connection /
+     segment bars (connection n → --spectrum-n), the logo, and celebratory
+     moments. NOT for generic UI chrome.                                    */
+  --spectrum-1: #8b7bff; /* violet  */
+  --spectrum-2: #6a8cff; /* indigo  */
+  --spectrum-3: #46a8ff; /* blue    */
+  --spectrum-4: #2fcbe6; /* cyan    */
+  --spectrum-5: #2ed3a9; /* teal    */
+  --spectrum-6: #7ad66a; /* green   */
+  --spectrum-7: #f2c14e; /* amber   */
+  --spectrum-8: #ff7f8f; /* rose    */
+  --gradient-prism: linear-gradient(90deg, #8b7bff 0%, #5d93ff 30%, #2fcbe6 58%, #7ad66a 80%, #f2c14e 100%);
+  --gradient-beam: linear-gradient(90deg, rgb(255 255 255 / 0) 0%, rgb(255 255 255 / 0.9) 100%);
+}
+
+/* Density ------------------------------------------------------------------ */
+:root,
+[data-density="comfortable"] { --row-h: var(--row-h-comfortable); }
+[data-density="compact"] { --row-h: var(--row-h-compact); }
+
+/* --------------------------------------------------------------------------
+   2. DARK theme (default)
+   "Obsidian": near-black solids, cool neutral greys, glass for chrome.
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Canvas = the window background that glass refracts. The ambient field
+     is a few huge, very soft colour pools painted ONCE (cheap); it is what
+     makes the sidebar / toolbar glass read as glass rather than flat grey. */
+  --bg-canvas: #07080b;
+  --ambient-1: rgb(var(--accent-rgb) / 0.34);
+  --ambient-2: rgb(47 203 230 / 0.17);
+  --ambient-3: rgb(255 127 143 / 0.08);
+  --bg-ambient:
+    radial-gradient(60% 55% at 0% 0%, var(--ambient-1) 0%, transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, var(--ambient-2) 0%, transparent 70%),
+    radial-gradient(40% 40% at 55% 110%, var(--ambient-3) 0%, transparent 70%);
+
+  /* Solid surfaces, ordered by elevation. */
+  --surface-sunken: #090a0e;   /* wells, inputs inside panels, track areas */
+  --surface-base: #0d0e13;     /* the content sheet (download table)        */
+  --surface-raised: #14151c;   /* cards, solid panels, table header         */
+  --surface-overlay: #1a1b23;  /* solid menus / popovers (no-blur fallback) */
+  --surface-inverse: #eceef4;
+
+  /* State layers — painted on top of any surface. */
+  --state-hover: rgb(255 255 255 / 0.045);
+  --state-pressed: rgb(255 255 255 / 0.08);
+  --state-selected: rgb(var(--accent-rgb) / 0.14);
+  --state-selected-hover: rgb(var(--accent-rgb) / 0.19);
+  --state-selected-border: rgb(var(--accent-rgb) / 0.32);
+  --state-disabled-opacity: 0.4;
+
+  /* Text */
+  --text-primary: #eceef4;     /* 16.6:1 on surface-base                     */
+  --text-secondary: #a3a7b5;   /*  8.0:1                                      */
+  --text-tertiary: #888da1;    /*  5.9:1 — AA for body text, 4.7:1 on glass   */
+  --text-disabled: #555a68;    /*  decorative / disabled only (exempt)        */
+  --text-inverse: #111318;
+  --text-link: var(--accent);
+
+  /* Lines */
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --border-default: rgb(255 255 255 / 0.10);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --border-focus: var(--accent);
+  --divider: rgb(255 255 255 / 0.055);
+
+  /* Controls */
+  --control-bg: rgb(255 255 255 / 0.06);
+  --control-bg-hover: rgb(255 255 255 / 0.09);
+  --control-bg-pressed: rgb(255 255 255 / 0.12);
+  --control-border: rgb(255 255 255 / 0.08);
+  --input-bg: rgb(0 0 0 / 0.28);
+  --input-border: rgb(255 255 255 / 0.10);
+  --track-bg: rgb(255 255 255 / 0.075);  /* progress / slider tracks */
+  --switch-off: rgb(255 255 255 / 0.16);
+  --scrollbar-thumb: rgb(255 255 255 / 0.14);
+  --scrollbar-thumb-hover: rgb(255 255 255 / 0.24);
+  --scrim: rgb(3 4 8 / 0.55);           /* behind modal dialogs */
+
+  /* Semantic status colours (text/icon on dark surfaces) */
+  --success: #3dd68c;  --success-rgb: 61 214 140;
+  --warning: #f5b544;  --warning-rgb: 245 181 68;
+  --danger: #ff6b6b;   --danger-rgb: 255 107 107;
+  --info: #5cc8f0;     --info-rgb: 92 200 240;
+  --neutral: #8a8fa0;  --neutral-rgb: 138 143 160;
+
+  /* Download status → colour mapping */
+  --status-downloading: var(--accent);
+  --status-completed: var(--success);
+  --status-paused: var(--warning);
+  --status-error: var(--danger);
+  --status-queued: var(--neutral);
+  --status-scheduled: var(--info);
+
+  /* File-type tints (icon tiles in the table) */
+  --type-video: #8b7bff;
+  --type-audio: #ff7f8f;
+  --type-image: #2ed3a9;
+  --type-archive: #f2c14e;
+  --type-document: #46a8ff;
+  --type-program: #a3a7b5;
+  --type-other: #80859a;
+
+  /* ---- Elevation (solid surfaces) ------------------------------------- */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / 0.30), 0 8px 20px -6px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 4px 10px rgb(0 0 0 / 0.30), 0 18px 40px -10px rgb(0 0 0 / 0.60);
+  --shadow-4: 0 8px 20px rgb(0 0 0 / 0.35), 0 32px 80px -16px rgb(0 0 0 / 0.75);
+  --shadow-sheet: 0 0 0 1px rgb(255 255 255 / 0.05), 0 10px 30px -10px rgb(0 0 0 / 0.6);
+  --highlight-top: inset 0 1px 0 rgb(255 255 255 / 0.06); /* solid-surface top edge */
+
+  /* ---- Glass materials ---------------------------------------------------
+     A glass surface is composed of 5 layers (see .glass in base.css):
+       1. backdrop-filter: blur + saturate            (the refraction)
+       2. --glass-tint      translucent base colour    (legibility)
+       3. --glass-sheen     top-down light falloff     (volume)
+       4. --glass-rim       1px gradient border via mask (specular edge)
+       5. --glass-highlight inset top highlight + --glass-shadow (depth)  */
+  --glass-tint: rgb(22 23 31 / 0.56);
+  --glass-tint-strong: rgb(24 25 34 / 0.78);
+  --glass-tint-subtle: rgb(20 21 28 / 0.38);
+  --glass-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.015) 38%, rgb(255 255 255 / 0) 100%);
+  --glass-rim: linear-gradient(165deg,
+      rgb(255 255 255 / 0.30) 0%,
+      rgb(255 255 255 / 0.09) 22%,
+      rgb(255 255 255 / 0.03) 55%,
+      rgb(255 255 255 / 0.08) 85%,
+      rgb(255 255 255 / 0.14) 100%);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.07), inset 0 0 0 1px rgb(255 255 255 / 0.02);
+  --glass-shadow: 0 1px 1px rgb(0 0 0 / 0.25), 0 16px 48px -12px rgb(0 0 0 / 0.55);
+  --glass-caustic: radial-gradient(120% 60% at 15% -10%, rgb(255 255 255 / 0.08) 0%, transparent 55%);
+  --glass-fallback: rgb(23 24 32 / 0.97);      /* .no-blur replacement    */
+  --glass-fallback-strong: rgb(26 27 36 / 0.985);
+}
+
+/* --------------------------------------------------------------------------
+   3. LIGHT theme
+   "Porcelain": cool off-white sheets, frosted milk glass, ink typography.
+   -------------------------------------------------------------------------- */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-canvas: #e6e8ee;
+  --ambient-1: rgb(var(--accent-rgb) / 0.22);
+  --ambient-2: rgb(47 203 230 / 0.16);
+  --ambient-3: rgb(255 127 143 / 0.10);
+  --bg-ambient:
+    radial-gradient(60% 55% at 0% 0%, var(--ambient-1) 0%, transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, var(--ambient-2) 0%, transparent 70%),
+    radial-gradient(40% 40% at 55% 110%, var(--ambient-3) 0%, transparent 70%);
+
+  --surface-sunken: #f0f1f5;
+  --surface-base: #fbfbfd;
+  --surface-raised: #ffffff;
+  --surface-overlay: #ffffff;
+  --surface-inverse: #16181e;
+
+  --state-hover: rgb(16 20 40 / 0.04);
+  --state-pressed: rgb(16 20 40 / 0.07);
+  --state-selected: rgb(var(--accent-rgb) / 0.10);
+  --state-selected-hover: rgb(var(--accent-rgb) / 0.14);
+  --state-selected-border: rgb(var(--accent-rgb) / 0.28);
+  --state-disabled-opacity: 0.45;
+
+  --text-primary: #111318;     /* 18.3:1 on surface-base */
+  --text-secondary: #4a4f5c;   /*  7.9:1 */
+  --text-tertiary: #5e6373;    /*  5.8:1 — 4.8:1 on glass */
+  --text-disabled: #a4a8b4;
+  --text-inverse: #f4f5f8;
+  --text-link: var(--accent);
+
+  --border-subtle: rgb(16 20 40 / 0.06);
+  --border-default: rgb(16 20 40 / 0.10);
+  --border-strong: rgb(16 20 40 / 0.17);
+  --border-focus: var(--accent);
+  --divider: rgb(16 20 40 / 0.065);
+
+  --control-bg: rgb(16 20 40 / 0.045);
+  --control-bg-hover: rgb(16 20 40 / 0.07);
+  --control-bg-pressed: rgb(16 20 40 / 0.10);
+  --control-border: rgb(16 20 40 / 0.08);
+  --input-bg: rgb(255 255 255 / 0.85);
+  --input-border: rgb(16 20 40 / 0.13);
+  --track-bg: rgb(16 20 40 / 0.075);
+  --switch-off: rgb(16 20 40 / 0.18);
+  --scrollbar-thumb: rgb(16 20 40 / 0.16);
+  --scrollbar-thumb-hover: rgb(16 20 40 / 0.28);
+  --scrim: rgb(20 24 36 / 0.28);
+
+  --success: #0a7d50;  --success-rgb: 10 125 80;
+  --warning: #9a5800;  --warning-rgb: 154 88 0;
+  --danger: #c42f35;   --danger-rgb: 196 47 53;
+  --info: #0a70a0;     --info-rgb: 10 112 160;
+  --neutral: #646979;  --neutral-rgb: 100 105 121;
+
+  --type-video: #6b5bf0;
+  --type-audio: #e04866;
+  --type-image: #0d9a78;
+  --type-archive: #b77700;
+  --type-document: #1f7fe0;
+  --type-program: #5b6070;
+  --type-other: #757a8a;
+
+  --spectrum-1: #7a68f5;
+  --spectrum-2: #5277f5;
+  --spectrum-3: #2a8ff0;
+  --spectrum-4: #12acd0;
+  --spectrum-5: #10b48d;
+  --spectrum-6: #4cb43c;
+  --spectrum-7: #e0a21c;
+  --spectrum-8: #f05d72;
+
+  --shadow-1: 0 1px 2px rgb(16 20 40 / 0.08);
+  --shadow-2: 0 1px 2px rgb(16 20 40 / 0.06), 0 6px 16px -4px rgb(16 20 40 / 0.12);
+  --shadow-3: 0 2px 6px rgb(16 20 40 / 0.06), 0 16px 36px -8px rgb(16 20 40 / 0.18);
+  --shadow-4: 0 4px 12px rgb(16 20 40 / 0.08), 0 28px 70px -14px rgb(16 20 40 / 0.28);
+  --shadow-sheet: 0 0 0 1px rgb(16 20 40 / 0.07), 0 8px 24px -10px rgb(16 20 40 / 0.16);
+  --highlight-top: inset 0 1px 0 rgb(255 255 255 / 0.9);
+
+  --glass-tint: rgb(248 249 252 / 0.58);
+  --glass-tint-strong: rgb(250 250 253 / 0.80);
+  --glass-tint-subtle: rgb(248 249 252 / 0.40);
+  --glass-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.18) 40%, rgb(255 255 255 / 0.05) 100%);
+  --glass-rim: linear-gradient(165deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(255 255 255 / 0.55) 25%,
+      rgb(255 255 255 / 0.25) 60%,
+      rgb(16 20 40 / 0.06) 100%);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(16 20 40 / 0.035);
+  --glass-shadow: 0 1px 2px rgb(16 20 40 / 0.06), 0 14px 40px -12px rgb(16 20 40 / 0.20);
+  --glass-caustic: radial-gradient(120% 60% at 15% -10%, rgb(255 255 255 / 0.65) 0%, transparent 55%);
+  --glass-fallback: rgb(246 247 250 / 0.98);
+  --glass-fallback-strong: rgb(250 250 252 / 0.99);
+}
+
+/* --------------------------------------------------------------------------
+   4. Accents
+   Each accent provides:
+     --accent          text / icon colour on the theme's surfaces (≥ 4.5:1)
+     --accent-rgb      triplet for translucent tints: rgb(var(--accent-rgb) / .14)
+     --accent-solid    filled button / progress fill
+     --accent-solid-hover
+     --accent-contrast text on --accent-solid (≥ 4.5:1)
+     --accent-glow     soft halo for focus rings and active progress
+   -------------------------------------------------------------------------- */
+
+/* Prism (signature violet-blue) — default */
+:root,
+[data-accent="prism"] {
+  --accent: #8e8cff; --accent-rgb: 124 120 255;
+  --accent-solid: #6461f2; --accent-solid-hover: #6f6cf8; --accent-contrast: #ffffff;
+  --accent-2: #5fb4ff; /* secondary stop for accent gradients */
+}
+[data-theme="light"][data-accent="prism"],
+[data-theme="light"]:not([data-accent]) {
+  --accent: #4f4be0; --accent-rgb: 86 83 234;
+  --accent-solid: #5653ea; --accent-solid-hover: #4a47dc; --accent-contrast: #ffffff;
+  --accent-2: #2f8ff0;
+}
+
+/* Cyan */
+[data-accent="cyan"] {
+  --accent: #4fd3ee; --accent-rgb: 54 197 230;
+  --accent-solid: #36c5e6; --accent-solid-hover: #52d0ec; --accent-contrast: #03141b;
+  --accent-2: #6a8cff;
+}
+[data-theme="light"][data-accent="cyan"] {
+  --accent: #0a7899; --accent-rgb: 11 127 160;
+  --accent-solid: #0b7fa0; --accent-solid-hover: #097190; --accent-contrast: #ffffff;
+  --accent-2: #4f6ff0;
+}
+
+/* Emerald */
+[data-accent="emerald"] {
+  --accent: #46d99c; --accent-rgb: 47 196 137;
+  --accent-solid: #2fc489; --accent-solid-hover: #45cf97; --accent-contrast: #04150e;
+  --accent-2: #2fcbe6;
+}
+[data-theme="light"][data-accent="emerald"] {
+  --accent: #087f53; --accent-rgb: 8 127 83;
+  --accent-solid: #087f53; --accent-solid-hover: #06704a; --accent-contrast: #ffffff;
+  --accent-2: #0b8fb0;
+}
+
+/* Amber */
+[data-accent="amber"] {
+  --accent: #f5bd55; --accent-rgb: 242 181 74;
+  --accent-solid: #f2b54a; --accent-solid-hover: #f6c062; --accent-contrast: #1a1203;
+  --accent-2: #ff8f6b;
+}
+[data-theme="light"][data-accent="amber"] {
+  --accent: #a35f00; --accent-rgb: 168 98 0;
+  --accent-solid: #a86200; --accent-solid-hover: #965700; --accent-contrast: #ffffff;
+  --accent-2: #d0503a;
+}
+
+/* Rose */
+[data-accent="rose"] {
+  --accent: #ff8aa5; --accent-rgb: 245 92 132;
+  --accent-solid: #d03a64; --accent-solid-hover: #da4a72; --accent-contrast: #ffffff;
+  --accent-2: #b37bff;
+}
+[data-theme="light"][data-accent="rose"] {
+  --accent: #c42d58; --accent-rgb: 211 58 99;
+  --accent-solid: #cf3760; --accent-solid-hover: #bc2c54; --accent-contrast: #ffffff;
+  --accent-2: #8b5cf6;
+}
+
+/* Graphite — monochrome, for people who want zero colour in the chrome */
+[data-accent="graphite"] {
+  --accent: #d6d9e2; --accent-rgb: 200 204 216;
+  --accent-solid: #e6e8ee; --accent-solid-hover: #f3f4f7; --accent-contrast: #111318;
+  --accent-2: #9aa0b0;
+}
+[data-theme="light"][data-accent="graphite"] {
+  --accent: #2b2f38; --accent-rgb: 43 47 56;
+  --accent-solid: #1f2229; --accent-solid-hover: #2d3039; --accent-contrast: #ffffff;
+  --accent-2: #5b6070;
+}
+
+/* Derived accent tokens (same formula for every accent / theme). */
+:root,
+[data-theme],
+[data-accent] {
+  --accent-soft: rgb(var(--accent-rgb) / 0.14);
+  --accent-softer: rgb(var(--accent-rgb) / 0.08);
+  --accent-border: rgb(var(--accent-rgb) / 0.35);
+  --accent-glow: 0 0 0 1px rgb(var(--accent-rgb) / 0.35), 0 0 16px -2px rgb(var(--accent-rgb) / 0.55);
+  --focus-ring: 0 0 0 2px var(--surface-base), 0 0 0 4px rgb(var(--accent-rgb) / 0.75);
+  --gradient-accent: linear-gradient(90deg, var(--accent-solid) 0%, var(--accent) 100%);
+  --progress-fill: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.85) 0%, var(--accent) 100%);
+}

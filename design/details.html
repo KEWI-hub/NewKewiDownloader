@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="prism">
+<head>
+<meta charset="utf-8">
+<title>Prism — Download details window</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="../app/src/design/fonts.css">
+<link rel="stylesheet" href="../app/src/design/tokens.css">
+<link rel="stylesheet" href="../app/src/design/base.css">
+<link rel="stylesheet" href="../app/src/design/components.css">
+<link rel="stylesheet" href="assets/windows.css">
+<script src="assets/icons.js"></script>
+<script src="assets/brand.js"></script>
+<script src="assets/mock.js"></script>
+<style>
+  body, .desktop { width: 1440px; height: 900px; }
+  .details { left: 290px; top: 92px; width: 860px; height: 716px; }
+
+  .hero { display: flex; gap: 16px; align-items: center; padding: 6px 24px 18px; }
+  .hero .file-tile { width: 52px; height: 52px; border-radius: 14px; }
+  .hero .file-tile svg { width: 28px; height: 28px; }
+  .hero__name { font-size: 17px; font-weight: 600; letter-spacing: -0.016em; }
+  .hero__url { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-tertiary); max-width: 560px; }
+  .hero__url span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hero__url .icon { color: var(--text-tertiary); }
+  .hero .grow { flex: 1; min-width: 0; }
+
+  .meter { padding: 0 24px 18px; }
+  .meter__row { display: flex; align-items: flex-end; gap: 28px; margin-bottom: 12px; }
+  .pct { font-size: 40px; font-weight: 600; letter-spacing: -0.04em; line-height: .9; font-variant-numeric: tabular-nums; }
+  .pct small { font-size: 20px; font-weight: 500; color: var(--text-secondary); margin-left: 1px; letter-spacing: -0.02em; }
+  .of { font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+  .of b { color: var(--text-secondary); font-weight: 500; }
+  .kpis { margin-left: auto; display: flex; gap: 26px; }
+  .kpi__k { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
+  .kpi__v { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .kpi__v small { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); margin-left: 2px; letter-spacing: 0; }
+  .progress--xl { --_h: 8px; }
+  .map { margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+  .map .segbar { flex: 1; height: 6px; border-radius: 3px; }
+  .map span { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
+
+  .panel { flex: 1; display: grid; grid-template-columns: 1fr 330px; border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider); min-height: 0; }
+  .ph { display: flex; align-items: center; justify-content: space-between; height: 38px; padding: 0 18px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .ph .t-overline { font-size: 10.5px; }
+  .ph .tabs { display: flex; gap: 2px; }
+  .lanes { padding: 0 18px 10px; display: grid; gap: 4px; }
+  .lane { display: grid; grid-template-columns: 22px 1fr 92px 70px; align-items: center; gap: 12px; height: 19px; font-size: 11px; }
+  .lane .rg { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary); text-align: right; white-space: nowrap; }
+  .lane .id { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary); }
+  .lane .track { position: relative; height: 7px; border-radius: 3.5px; background: var(--track-bg); }
+  .lane .range { position: absolute; top: 0; bottom: 0; border-radius: 3.5px; background: color-mix(in srgb, var(--c) 18%, transparent); }
+  .lane .fill { position: absolute; top: 0; bottom: 0; border-radius: 3.5px; background: var(--c); box-shadow: 0 0 8px -1px var(--c); transition: width 250ms linear; }
+  .lane .head { position: absolute; top: -2px; bottom: -2px; width: 2px; border-radius: 1px; background: #fff; box-shadow: 0 0 6px 1px var(--c); transition: left 250ms linear; }
+  [data-theme="light"] .lane .head { background: var(--surface-inverse); }
+  .lane .sp { text-align: right; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); }
+  .lane.done .sp { color: var(--success); font-family: var(--font-sans); font-size: 11px; }
+  .lane.done .fill { box-shadow: none; opacity: .55; }
+
+  .speed { border-left: 1px solid var(--divider); display: flex; flex-direction: column; min-height: 0; }
+  .chart { position: relative; flex: 1; margin: 0 18px; }
+  .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .chart .ylab { position: absolute; right: 100%; margin-right: 6px; font-size: 9.5px; color: var(--text-tertiary); font-family: var(--font-mono); transform: translateY(-50%); }
+  .sstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px 18px 14px; }
+  .sstat { padding: 8px 10px; border-radius: 9px; background: var(--control-bg); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  .sstat .k { font-size: 10.5px; color: var(--text-tertiary); }
+  .sstat .v { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+  .foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px 14px 20px; }
+  .foot .opt { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-secondary); }
+  .foot .mini-input { width: 92px; height: 26px; font-size: 12px; }
+  .foot .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="desktop">
+  <div class="window glass-strong details">
+    <div class="wtitle drag-region">
+      <span class="text-accent">{{i:status-downloading}}</span>
+      <span class="grow" id="wt">Downloading · 62% · ubuntu-24.04.1-desktop-amd64.iso</span>
+      <button class="tb-btn" title="Keep on top">{{i:pin}}</button>
+      <button class="tb-btn" title="Mini mode">{{i:mini-mode}}</button>
+      <div class="caption"><button class="caption__btn">{{w:minimize}}</button><button class="caption__btn caption__btn--close">{{w:close}}</button></div>
+    </div>
+
+    <div class="hero">
+      <span class="file-tile" style="--tint: var(--accent)">{{i:disk-image}}</span>
+      <div class="grow">
+        <div class="hero__name">ubuntu-24.04.1-desktop-amd64.iso</div>
+        <div class="hero__url">{{s:link}}<span>https://releases.ubuntu.com/24.04.1/ubuntu-24.04.1-desktop-amd64.iso</span>{{s:copy}}</div>
+      </div>
+      <span class="badge badge--accent"><span class="status-dot status-dot--live"></span>Downloading</span>
+      <span class="badge badge--success">{{x:shield}}Resumable</span>
+    </div>
+
+    <div class="meter">
+      <div class="meter__row">
+        <div class="pct" id="pct">62.4<small>%</small></div>
+        <div class="of" id="of"><b>3.64 GB</b> of 5.83 GB</div>
+        <div class="kpis">
+          <div><div class="kpi__k">Speed</div><div class="kpi__v" id="kspeed">18.4<small>MB/s</small></div></div>
+          <div><div class="kpi__k">Time left</div><div class="kpi__v" id="keta">2m 02s</div></div>
+          <div><div class="kpi__k">Connections</div><div class="kpi__v">12<small>/ 16</small></div></div>
+        </div>
+      </div>
+      <div class="progress progress--xl" data-state="active" id="bigbar" style="--value:.624"><div class="progress__fill"></div></div>
+      <div class="map"><span>File map</span><div class="segbar" id="map"></div><span>16 segments</span></div>
+    </div>
+
+    <div class="panel wbody-solid">
+      <div>
+        <div class="ph"><span>Connections</span><div class="segmented segmented--sm" style="height:24px"><span class="segmented__item" aria-selected="true">Lanes</span><span class="segmented__item">Table</span></div></div>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="speed">
+        <div class="ph"><span>Speed</span><span class="text-tertiary" style="font-weight:400;font-size:11px">Last 60 s</span></div>
+        <div class="chart" id="chart"></div>
+        <div class="sstats"><div class="sstat"><div class="k">Now</div><div class="v" id="snow">18.4 MB/s</div></div><div class="sstat"><div class="k">Average</div><div class="v">17.9 MB/s</div></div><div class="sstat"><div class="k">Peak</div><div class="v">24.6 MB/s</div></div></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <label class="opt"><span class="switch" aria-checked="false"></span>Limit speed</label>
+      <span class="input mini-input"><span class="input__value text-tertiary">10 MB/s</span></span>
+      <span class="tb-sep"></span>
+      <label class="opt"><span class="checkbox" aria-checked="true">{{c:check}}</span>Show completion dialog</label>
+      <span class="spacer"></span>
+      <button class="btn btn--ghost btn--danger">Cancel</button>
+      <button class="btn">{{s:folder-open}}Open folder</button>
+      <button class="btn btn--primary">{{s:pause}}Pause</button>
+    </div>
+  </div>
+</div>
+<script>
+  // tiny template: {{i:name}} 18px, {{s:name}} 15px, {{x:name}} 12px, {{w:name}} caption, {{c:name}} checkbox tick
+  document.body.innerHTML = document.body.innerHTML.replace(/\{\{(\w):([\w-]+)\}\}/g, function (_, k, n) {
+    return k === "i" ? icon(n, 18) : k === "s" ? icon(n, 15) : k === "x" ? icon(n, 12, "", 2.2) : k === "c" ? icon(n, 12, "", 2.5) : icon(n, n === "close" ? 16 : 16, "", n === "close" ? 1.4 : 1.25);
+  });
+
+  // ---- live simulation (one engine tick = 250 ms) ----
+  var N = 16, total = 5.83, lanes = [], seed = 17;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  for (var i = 0; i < N; i++) {
+    var a = i / N, b = (i + 1) / N, f = i < 4 ? 1 : 0.25 + rnd() * 0.6;
+    lanes.push({ a: a, b: b, f: f, v: 0.008 + rnd() * 0.012 });
+  }
+  var L = document.getElementById("lanes"), MAP = document.getElementById("map");
+  function color(i) { return "var(--spectrum-" + ((i % 8) + 1) + ")"; }
+  L.innerHTML = lanes.map(function (l, i) {
+    return '<div class="lane" id="ln' + i + '" style="--c:' + color(i) + '"><span class="id">' + String(i + 1).padStart(2, "0") +
+      '</span><span class="track"><span class="fill"></span><span class="head"></span></span><span class="rg">' + (l.a * total).toFixed(2) + "–" + (l.b * total).toFixed(2) + ' GB</span><span class="sp"></span></div>';
+  }).join("");
+  MAP.innerHTML = lanes.map(function (l, i) { return '<span class="segbar__seg" style="--a:' + l.a + ";--b:" + l.b + ";--c:" + color(i) + '"></span>'; }).join("");
+
+  var hist = MOCK.series(60, 21, 18.4, 4.5);
+  var W = 294, H = 200;
+  function draw() {
+    var done = 0;
+    lanes.forEach(function (l, i) {
+      if (l.f < 1) { l.f = Math.min(1, l.f + l.v * (0.6 + rnd() * 0.8)); }
+      done += (l.b - l.a) * l.f;
+      var el = document.getElementById("ln" + i);
+      el.classList.toggle("done", l.f >= 1);
+      el.querySelector(".fill").style.cssText = "left:0;width:" + l.f * 100 + "%";
+      el.querySelector(".head").style.cssText = "left:calc(" + l.f * 100 + "% - 1px);" + (l.f >= 1 ? "display:none" : "");
+      el.querySelector(".sp").textContent = l.f >= 1 ? "done" : (1.1 + rnd() * 0.9).toFixed(2) + " MB/s";
+      MAP.children[i].style.setProperty("--p", l.f.toFixed(3));
+      MAP.children[i].dataset.active = l.f < 1;
+    });
+    var pct = (done * 100).toFixed(1);
+    document.getElementById("pct").innerHTML = pct + "<small>%</small>";
+    document.getElementById("of").innerHTML = "<b>" + (done * total).toFixed(2) + " GB</b> of 5.83 GB";
+    document.getElementById("wt").textContent = "Downloading · " + Math.floor(done * 100) + "% · ubuntu-24.04.1-desktop-amd64.iso";
+    document.getElementById("bigbar").style.setProperty("--value", done.toFixed(4));
+    var now = hist[hist.length - 1];
+    document.getElementById("kspeed").innerHTML = now.toFixed(1) + "<small>MB/s</small>";
+    document.getElementById("snow").textContent = now.toFixed(1) + " MB/s";
+    var eta = Math.round(((1 - done) * total * 1024) / now);
+    document.getElementById("keta").textContent = Math.floor(eta / 60) + "m " + String(eta % 60).padStart(2, "0") + "s";
+    var max = 30, step = W / (hist.length - 1);
+    var pts = hist.map(function (d, i) { return [i * step, H - (d / max) * H]; });
+    var line = "M" + pts[0][0] + " " + pts[0][1].toFixed(1);
+    for (var j = 0; j < pts.length - 1; j++) {
+      var p0 = pts[j - 1] || pts[j], p1 = pts[j], p2 = pts[j + 1], p3 = pts[j + 2] || p2;
+      line += "C" + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + " " + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + " " + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + " " + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + " " + p2[0].toFixed(1) + " " + p2[1].toFixed(1);
+    }
+    var grid = [0, 10, 20, 30].map(function (v) { var y = H - (v / max) * H; return '<path d="M0 ' + y + "H" + W + '" stroke="var(--divider)"/>'; }).join("");
+    document.getElementById("chart").innerHTML =
+      [10, 20, 30].map(function (v) { return '<span class="ylab" style="top:' + (100 - (v / max) * 100) + '%">' + v + "</span>"; }).join("") +
+      '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none"><defs><linearGradient id="sg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".40"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>' + grid +
+      '<path d="' + line + "L" + W + " " + H + "L0 " + H + 'Z" fill="url(#sg)"/><path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="1.75" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+      '<circle cx="' + W + '" cy="' + pts[pts.length - 1][1].toFixed(1) + '" r="3.5" fill="var(--accent)" stroke="var(--surface-base)" stroke-width="2"/></svg>';
+    hist.shift(); hist.push(Math.max(8, Math.min(28, now + (rnd() - 0.5) * 3 + (18.4 - now) * 0.1)));
+  }
+  draw();
+  setInterval(draw, 250);
+</script>
+</body>
+</html>
