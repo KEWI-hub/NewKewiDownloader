@@ -58,7 +58,8 @@ function kindIcon(m: MediaItem): string {
 }
 
 function mediaMeta(m: MediaItem): string {
-  const kind = m.kind === 'hls' ? 'HLS' : m.kind === 'dash' ? 'DASH' : m.mime || m.kind;
+  // A stream is saved as one MP4, as in the page menu.
+  const kind = m.kind === 'hls' || m.kind === 'dash' ? 'MP4' : m.mime || m.kind;
   return [kind, m.quality, humanSize(m.size)].filter(Boolean).join(' · ');
 }
 
