@@ -1,8 +1,8 @@
-/** Inline SVG icons (drawn for Prism; no third-party icon sets). */
+/** Inline SVG icons (drawn for New Kewi Downloader; no third-party icon sets). */
 
 let gradSeq = 0;
 
-/** The Prism mark: a glass prism splitting a white ray into a spectrum. */
+/** The New Kewi Downloader mark: a glass prism splitting a white ray into a spectrum. */
 export function prismMark(size = 18): string {
   const g = `prism-g${++gradSeq}`;
   return `<svg class="prism-mark" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" aria-hidden="true">

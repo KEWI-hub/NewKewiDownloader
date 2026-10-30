@@ -17,9 +17,9 @@ describe('stream qualities in the video menu', () => {
       { index: 2, url: 'https://cdn.example/mid.m3u8', bandwidth: 2_000_000, width: 1280, height: 720 },
     ])!;
     expect(opts.map((o) => [o.label, o.detail, o.stream?.variantIndex])).toEqual([
-      ['1080p', 'HLS · 5000 kbps', 1],
-      ['720p', 'HLS · 2000 kbps', 2],
-      ['360p', 'HLS · 800 kbps', 0],
+      ['1080p', 'MP4 · 5000 kbps', 1],
+      ['720p', 'MP4 · 2000 kbps', 2],
+      ['360p', 'MP4 · 800 kbps', 0],
     ]);
     // The manifest's URL, headers and group stay; the quality is the picked variant's.
     expect(opts[0]!.stream).toEqual({ ...base.stream, quality: '1080p', variantIndex: 1 });
@@ -34,8 +34,14 @@ describe('stream qualities in the video menu', () => {
     expect(variantLabel({ index: 0, url: 'u' })).toBe('Stream');
   });
 
-  it('keeps the single entry for a manifest with one variant or none', () => {
-    expect(variantOptions(base, 'dash', [{ index: 0, url: 'u', height: 720 }])).toBeNull();
+  it('names a lone variant once its size is known, as the MP4 it is saved as', () => {
+    // pornavhd's player: one variant, no RESOLUTION in the playlist; the app read 1920x1080 from it.
+    const opts = variantOptions(base, 'hls', [{ index: 0, url: 'u', bandwidth: 7_863_608, width: 1920, height: 1080 }])!;
+    expect(opts.map((o) => [o.label, o.detail, o.stream?.variantIndex])).toEqual([['1080p', 'MP4 · 7864 kbps', 0]]);
+  });
+
+  it('keeps the single entry for a lone variant of unknown size, or none', () => {
+    expect(variantOptions(base, 'hls', [{ index: 0, url: 'u', bandwidth: 7_863_608 }])).toBeNull();
     expect(variantOptions(base, 'dash', [])).toBeNull();
   });
 });

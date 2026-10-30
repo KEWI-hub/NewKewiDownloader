@@ -277,7 +277,8 @@ export function mediaDetail(m: MediaItem): string {
 export function mediaLabel(m: MediaItem): string {
   // Container from the extension, else from the MIME type (CDN URLs often have no extension).
   const container = fileExtension(m.url) || MIME_CONTAINERS[m.mime?.toLowerCase() ?? ''];
-  const kind = m.kind === 'hls' ? 'HLS' : m.kind === 'dash' ? 'DASH' : container || (m.kind === 'audio' ? 'Audio' : 'Video');
+  // A stream is saved as one MP4 (the app muxes its tracks), so that is what the menu promises.
+  const kind = m.kind === 'hls' || m.kind === 'dash' ? 'MP4' : container || (m.kind === 'audio' ? 'Audio' : 'Video');
   const parts = [m.quality ?? (m.kind === 'audio' ? 'Audio' : m.kind === 'hls' || m.kind === 'dash' ? 'Stream' : 'Video'), kind];
   const size = humanSize(m.size);
   if (size) parts.push(size);

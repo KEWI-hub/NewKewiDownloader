@@ -67,7 +67,7 @@ describe('helpers', () => {
   it('labels streams by quality and container, also from the MIME type', () => {
     expect(mediaLabel(item({ url: `${LI}/mp4-640p-30fp-crf28/0/1704988851446`, mime: 'video/mp4', quality: '640p', size: 5316468 }))).toBe('640p · MP4 · 5.1 MB');
     expect(mediaLabel(item({ url: 'https://x/clip.webm', size: 300 * 1024 }))).toBe('Video · WEBM · 300 KB');
-    expect(mediaLabel(item({ url: 'https://x/master.m3u8', kind: 'hls', streamKind: 'hls' }))).toBe('Stream · HLS');
+    expect(mediaLabel(item({ url: 'https://x/master.m3u8', kind: 'hls', streamKind: 'hls' }))).toBe('Stream · MP4');
   });
   it('formats sizes', () => {
     expect(humanSize(0)).toBe('');

@@ -37,15 +37,15 @@ function chip(c: ConnectionInfo): string {
 function alertCard(c: ConnectionInfo): string {
   if (c.state === 'connected' || c.state === 'unknown') return '';
   const missing = c.state === 'host_missing';
-  const title = missing ? 'Browser integration isn’t installed' : 'Prism isn’t reachable';
+  const title = missing ? 'Browser integration isn’t installed' : 'New Kewi Downloader isn’t reachable';
   const hint = missing
-    ? 'Fix: open Prism › Settings › Browser integration and click Repair.'
-    : 'Start Prism, or open Prism › Settings › Browser integration › Repair. Downloads stay in the browser meanwhile.';
+    ? 'Fix: open New Kewi Downloader › Settings › Browser integration and click Repair.'
+    : 'Start New Kewi Downloader, or open New Kewi Downloader › Settings › Browser integration › Repair. Downloads stay in the browser meanwhile.';
   return `<section class="alert glass" id="fix">
     <span class="ic">${icons.alert(18)}</span><b>${title}</b>
     <p>${hint}${c.error ? `<br><span class="small">Details: ${esc(c.error)}</span>` : ''}</p>
     <div class="actions">
-      ${missing ? '' : `<button class="btn primary" data-act="launch">${icons.external(14)}Start Prism</button>`}
+      ${missing ? '' : `<button class="btn primary" data-act="launch">${icons.external(14)}Start New Kewi Downloader</button>`}
       <button class="btn" data-act="retry">${icons.refresh(14)}Retry</button>
     </div>
   </section>`;
@@ -69,13 +69,13 @@ function render(): void {
   app.innerHTML = `
     <header class="top">
       <span class="tile">${prismMark(24)}</span>
-      <div class="brand"><b>Prism</b><span class="muted">Download manager</span></div>
+      <div class="brand"><b>New Kewi Downloader</b><span class="muted">Download manager</span></div>
       ${chip(connection)}
     </header>
     ${alertCard(connection)}
     <section class="row glass">
       <div class="tx"><b>Capture downloads</b><span>${
-        !st.settings.captureEnabled ? 'Disabled in settings' : st.paused ? 'Paused — the browser downloads files itself' : 'Matching files open in Prism'
+        !st.settings.captureEnabled ? 'Disabled in settings' : st.paused ? 'Paused — the browser downloads files itself' : 'Matching files open in New Kewi Downloader'
       }</span></div>
       <label class="switch" title="Pause capture"><input type="checkbox" id="capture" ${capturing ? 'checked' : ''} ${
         st.settings.captureEnabled ? '' : 'disabled'
@@ -103,7 +103,7 @@ function render(): void {
       <button class="btn" data-act="collect" data-mode="videos">${icons.film(18)}All videos</button>
     </section>
     <footer class="foot">
-      <button class="btn ghost" data-act="open">${prismMark(16)}Open Prism</button>
+      <button class="btn ghost" data-act="open">${prismMark(16)}Open New Kewi Downloader</button>
       <span class="spacer"></span>
       <button class="btn ghost icon" data-act="options" title="Options" aria-label="Options">${icons.gear(16)}</button>
     </footer>`;
@@ -139,11 +139,11 @@ async function act(el: HTMLElement): Promise<void> {
     switch (a) {
       case 'media':
         r = await sendInternal<ActionResult>({ kind: 'downloadMedia', tabId, key: el.dataset.key! });
-        if (r?.ok) toast('Sent to Prism');
+        if (r?.ok) toast('Sent to New Kewi Downloader');
         break;
       case 'collect':
         r = await sendInternal<ActionResult>({ kind: 'collect', tabId, mode: el.dataset.mode as BatchKind });
-        if (r?.ok) toast(r.count ? `Sent ${r.count} item${r.count === 1 ? '' : 's'} to Prism` : 'Nothing found on this page');
+        if (r?.ok) toast(r.count ? `Sent ${r.count} item${r.count === 1 ? '' : 's'} to New Kewi Downloader` : 'Nothing found on this page');
         break;
       case 'open':
       case 'launch':
@@ -159,7 +159,7 @@ async function act(el: HTMLElement): Promise<void> {
         break;
     }
     if (r && !r.ok) toast(r.error ?? 'Something went wrong', true);
-    if (!r) toast('Prism extension is restarting — try again', true);
+    if (!r) toast('New Kewi Downloader extension is restarting — try again', true);
   } finally {
     busy = false;
     (el as HTMLButtonElement).disabled = false;
