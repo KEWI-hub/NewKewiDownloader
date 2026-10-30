@@ -29,8 +29,9 @@ concurrency:
 jobs:
   deploy:
     name: Deploy site/
-    # The badge refreshes only in the public repository.
-    if: (github.event_name != 'schedule' && github.event_name != 'workflow_run') || github.repository == 'FortoGraphy/prism-download-manager'
+    # site/ is Prism's own website (CNAME prismdl.site), so only the upstream repository deploys
+    # it; a fork has no Pages site and the run would fail at configure-pages.
+    if: github.repository == 'FortoGraphy/prism-download-manager'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
