@@ -425,7 +425,9 @@ mod platform {
     pub fn register_one(b: Browser, opts: &RegisterOptions) -> Result<(), RegistrationError> {
         let file = manifest_file(&opts.locations, b)?;
         write_if_changed(&file, &manifest_bytes(&manifest_for(b, opts)))?;
-        let value = file.to_string_lossy().to_string();
+        // Chrome answers "native messaging host not found" for a manifest path with `/` in it,
+        // as a data dir given as `C:/…` in NEWKEWI_DATA_DIR makes it.
+        let value = file.to_string_lossy().replace('/', "\\");
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         for vendor in vendor_keys(b) {
             let key = key_path(&opts.locations, vendor);
