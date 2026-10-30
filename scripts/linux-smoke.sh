@@ -4,9 +4,9 @@
 #   bash scripts/linux-smoke.sh            (needs a display: WSLg, X11 or Wayland session)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export PRISM_DATA_DIR=/tmp/prism-smoke/data
+export NEWKEWI_DATA_DIR=/tmp/prism-smoke/data
 DL=/tmp/prism-smoke/dl
-rm -rf /tmp/prism-smoke && mkdir -p "$PRISM_DATA_DIR" "$DL"
+rm -rf /tmp/prism-smoke && mkdir -p "$NEWKEWI_DATA_DIR" "$DL"
 cargo build -q --release -p prism-testserver
 ./target/release/prism-testserver --port 18766 >/tmp/prism-smoke/server.log 2>&1 &
 SERVER=$!
@@ -18,15 +18,15 @@ import json, sqlite3, subprocess, time, os
 # First start creates the database; then patch settings.
 p = subprocess.Popen(["prism", "--background"], env=dict(os.environ))
 for _ in range(100):
-    if os.path.exists("$PRISM_DATA_DIR/ipc.json"): break
+    if os.path.exists("$NEWKEWI_DATA_DIR/ipc.json"): break
     time.sleep(0.1)
 p.terminate(); p.wait(timeout=10)
-db = sqlite3.connect("$PRISM_DATA_DIR/prism.db")
+db = sqlite3.connect("$NEWKEWI_DATA_DIR/prism.db")
 s = {"general": {"showCaptureDialog": False, "showCompletionDialog": False}, "downloads": {"defaultDir": "$DL", "useCategoryFolders": False}, "onboardingDone": True}
 db.execute("INSERT OR REPLACE INTO settings(key, value) VALUES ('settings', ?)", (json.dumps(s),))
 db.commit()
 PY
-rm -f "$PRISM_DATA_DIR/ipc.json"
+rm -f "$NEWKEWI_DATA_DIR/ipc.json"
 
 python3 - <<'PY'
 import hashlib, json, os, struct, subprocess, time, urllib.request

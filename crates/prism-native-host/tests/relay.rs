@@ -1,5 +1,5 @@
 //! End-to-end tests of the built `prism-native-host` binary against a mock app
-//! (a tiny std-only HTTP server) using `PRISM_DATA_DIR` for ipc.json.
+//! (a tiny std-only HTTP server) using `NEWKEWI_DATA_DIR` for ipc.json.
 
 use serde_json::{Value, json};
 use std::io::{BufRead, BufReader, Read, Write};
@@ -105,9 +105,9 @@ fn spawn_host(data_dir: &Path, app_path: &Path) -> Child {
     Command::new(env!("CARGO_BIN_EXE_prism-native-host"))
         .arg("chrome-extension://mmcdeiglkbfbicdjboocmhehodogilfl/")
         .arg("--parent-window=0")
-        .env("PRISM_DATA_DIR", data_dir)
-        .env("PRISM_APP_PATH", app_path)
-        .env("PRISM_HOST_DEBUG", "1")
+        .env("NEWKEWI_DATA_DIR", data_dir)
+        .env("NEWKEWI_APP_PATH", app_path)
+        .env("NEWKEWI_HOST_DEBUG", "1")
         .env_remove("HTTP_PROXY")
         .env_remove("http_proxy")
         .stdin(Stdio::piped())

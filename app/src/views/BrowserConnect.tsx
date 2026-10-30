@@ -36,6 +36,14 @@ const FIREFOX_FAMILY = ["firefox", "zen"];
 
 /** New Kewi Downloader's extension in the Chrome Web Store: Chrome, Edge, Brave, Opera, Vivaldi, Helium and Chromium install it from there. */
 export const EXTENSION_STORE_URL = "https://chromewebstore.google.com/detail/prism-download-manager/mmcdeiglkbfbicdjboocmhehodogilfl";
+/**
+ * Whether [`EXTENSION_STORE_URL`] is a listing of ours. It is not: the listed extension is
+ * Prism's and it speaks the old native messaging host name, so a copy installed from there
+ * would never connect to this app. Until this fork has a listing of its own, the browser guide
+ * leads with the unpacked extension the installer ships, which does work. Publish a listing,
+ * point `EXTENSION_STORE_URL` at it, and flip this to `true`.
+ */
+const STORE_LISTING = false;
 /** The store's install button as each browser labels it (Chrome's label elsewhere). */
 const ADD_LABEL: Record<string, string> = { brave: "Add to Brave", opera: "Add to Opera" };
 
@@ -83,10 +91,9 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
   const [browser, setBrowser] = useState<string | null>(null);
   const current = browser ?? (status ? pickDefault(status.browsers) : "chrome");
   const firefox = FIREFOX_FAMILY.includes(current);
-  // The unpacked extension New Kewi Downloader ships. It is the way in: the Chrome Web Store
-  // listing belongs to Prism and its copy speaks the old native host name, so it cannot talk to
-  // this app. Default this back to `false` once there is a store listing of our own.
-  const [byHand, setByHand] = useState(true);
+  // "Prefer to add it by hand?" (below the store guide): the unpacked extension New Kewi Downloader ships.
+  // Open from the start while there is no store listing, since it is then the only way in.
+  const [byHand, setByHand] = useState(!STORE_LISTING);
   const [folder, setFolder] = useState<string | null>(null);
   useEffect(() => {
     if (firefox || byHand) void api.extensionFolder(firefox).then(setFolder, () => setFolder(null));
@@ -211,7 +218,7 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
             </div>
           </li>
         </ol>
-      ) : (
+      ) : !STORE_LISTING ? null : (
         <ol className="bsteps">
           {manual && (
             <li className="bstep">
@@ -312,14 +319,18 @@ export function BrowserConnect({ status, connected, hideOwnStatus }: { status: I
 
       {!firefox && (
         <div className="bconnect__manual">
-          <button type="button" className="disclose" aria-expanded={byHand} onClick={() => setByHand(!byHand)}>
-            <Icon name={byHand ? "chevron-down" : "chevron-right"} size={12} strokeWidth={2.2} /> {t("Prefer to add it by hand?")}
-          </button>
+          {STORE_LISTING && (
+            <button type="button" className="disclose" aria-expanded={byHand} onClick={() => setByHand(!byHand)}>
+              <Icon name={byHand ? "chevron-down" : "chevron-right"} size={12} strokeWidth={2.2} /> {t("Prefer to add it by hand?")}
+            </button>
+          )}
           {byHand && (
             <>
-              <p className="t-small text-tertiary">
-                {t("Without the store: load the folder New Kewi Downloader keeps up to date. A copy added this way doesn't update by itself — after a New Kewi Downloader update, click ↻ next to New Kewi Downloader on the extensions page.")}
-              </p>
+              {STORE_LISTING && (
+                <p className="t-small text-tertiary">
+                  {t("Without the store: load the folder New Kewi Downloader keeps up to date. A copy added this way doesn't update by itself — after a New Kewi Downloader update, click ↻ next to New Kewi Downloader on the extensions page.")}
+                </p>
+              )}
               <ol className="bsteps">
                 <li className="bstep">
                   <span className="bstep__n">1</span>

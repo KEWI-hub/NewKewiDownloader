@@ -62,7 +62,7 @@ pub const HOST_BINARY_NAME: &str = "prism-native-host";
 
 /// File name of the app executable the host launches (it lives next to the host).
 #[cfg(windows)]
-pub const APP_BINARY_NAME: &str = "prism.exe";
+pub const APP_BINARY_NAME: &str = "newkewi.exe";
 /// File name of the app executable the host launches (it lives next to the host).
 #[cfg(not(windows))]
-pub const APP_BINARY_NAME: &str = "prism";
+pub const APP_BINARY_NAME: &str = "newkewi";

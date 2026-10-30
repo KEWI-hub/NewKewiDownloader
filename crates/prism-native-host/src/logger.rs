@@ -1,6 +1,6 @@
 //! Tiny rotating file logger (`<data dir>/logs/native-host.log`, rotated to
 //! `.log.1` at 1 MiB). Never writes to stdout — stdout carries protocol frames.
-//! Debug lines are only written when `PRISM_HOST_DEBUG=1`.
+//! Debug lines are only written when `NEWKEWI_HOST_DEBUG=1`.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;

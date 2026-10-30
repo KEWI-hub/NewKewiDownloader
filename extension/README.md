@@ -230,7 +230,7 @@ e2e/                      Playwright end-to-end test, mock app, test site
 
 `npm run e2e` (needs `npm run build`, `cargo build -p prism-native-host --release`,
 `npx playwright install chromium`). It starts a mock app (writes `ipc.json` into a temp
-`PRISM_DATA_DIR`), registers the real host for Playwright's Chromium
+`NEWKEWI_DATA_DIR`), registers the real host for Playwright's Chromium
 (`HKCU\Software\Chromium\NativeMessagingHosts\dev.prism.host` on Windows, temp manifest,
 backed up/restored afterwards), serves a local page, launches headless Chromium with the unpacked
 extension and checks: stable ID; `hello` over the native port; .zip click → `download` at the app

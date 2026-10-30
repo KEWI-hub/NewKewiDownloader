@@ -111,7 +111,7 @@ try {
   }
   const reg = execFileSync(hostExe, ['register', '--browsers', browsers, '--manifest-dir', nmDir, '--extension-id-chrome', EXPECTED_ID], {
     encoding: 'utf8',
-    env: { ...process.env, PRISM_DATA_DIR: dataDir },
+    env: { ...process.env, NEWKEWI_DATA_DIR: dataDir },
   });
   const regStatus = JSON.parse(reg);
   assert.ok(regStatus.every((s) => s.registered && s.pointsToThisHost), `registration failed: ${reg}`);
@@ -124,7 +124,7 @@ try {
     acceptDownloads: true,
     downloadsPath: dlDir,
     args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
-    env: { ...process.env, PRISM_DATA_DIR: dataDir, PRISM_APP_PATH: join(tmp, 'no-app.exe'), PRISM_HOST_DEBUG: '1' },
+    env: { ...process.env, NEWKEWI_DATA_DIR: dataDir, NEWKEWI_APP_PATH: join(tmp, 'no-app.exe'), NEWKEWI_HOST_DEBUG: '1' },
     viewport: { width: 1280, height: 900 },
   });
   const sw = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker', { timeout: 10000 }));
@@ -678,7 +678,7 @@ try {
   await mock?.close().catch(() => {});
   await site?.close().catch(() => {});
   try {
-    execFileSync(hostExe, ['unregister', '--browsers', browsers, '--manifest-dir', nmDir], { stdio: 'ignore', env: { ...process.env, PRISM_DATA_DIR: dataDir } });
+    execFileSync(hostExe, ['unregister', '--browsers', browsers, '--manifest-dir', nmDir], { stdio: 'ignore', env: { ...process.env, NEWKEWI_DATA_DIR: dataDir } });
   } catch {
     /* ignore */
   }

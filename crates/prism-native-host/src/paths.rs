@@ -4,14 +4,14 @@
 //!
 //! | OS | Path |
 //! |---|---|
-//! | Windows | `%APPDATA%\Prism` (e.g. `C:\Users\me\AppData\Roaming\Prism`) |
-//! | macOS | `~/Library/Application Support/Prism` |
-//! | Linux / other Unix | `$XDG_DATA_HOME/prism` if `XDG_DATA_HOME` is set and absolute, else `~/.local/share/prism` |
+//! | Windows | `%APPDATA%\NewKewi` (e.g. `C:\Users\me\AppData\Roaming\NewKewi`) |
+//! | macOS | `~/Library/Application Support/NewKewi` |
+//! | Linux / other Unix | `$XDG_DATA_HOME/newkewi` if `XDG_DATA_HOME` is set and absolute, else `~/.local/share/newkewi` |
 //!
-//! The env var `PRISM_DATA_DIR` overrides all of the above (used by tests and
+//! The env var `NEWKEWI_DATA_DIR` overrides all of the above (used by tests and
 //! dev setups; the app core must honour it too). Next, a `portable.txt` next to the
 //! executable switches to `<exe dir>/data` (the Windows portable zip ships the host next
-//! to `prism.exe`), exactly like the app core.
+//! to `newkewi.exe`), exactly like the app core.
 //!
 //! Files inside the data dir:
 //!
@@ -27,11 +27,11 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 /// Env var that overrides the data dir.
-pub const DATA_DIR_ENV: &str = "PRISM_DATA_DIR";
+pub const DATA_DIR_ENV: &str = "NEWKEWI_DATA_DIR";
 /// Env var that overrides the path of the app executable the host launches.
-pub const APP_PATH_ENV: &str = "PRISM_APP_PATH";
+pub const APP_PATH_ENV: &str = "NEWKEWI_APP_PATH";
 /// Env var that enables debug logging in the host.
-pub const DEBUG_ENV: &str = "PRISM_HOST_DEBUG";
+pub const DEBUG_ENV: &str = "NEWKEWI_HOST_DEBUG";
 
 /// Name of the IPC discovery file inside the data dir.
 pub const IPC_FILE_NAME: &str = "ipc.json";
@@ -54,21 +54,21 @@ pub fn resolve_data_dir(
         return Some(PathBuf::from(dir));
     }
     match os {
-        "windows" => non_empty(appdata).map(|a| PathBuf::from(a).join("Prism")),
+        "windows" => non_empty(appdata).map(|a| PathBuf::from(a).join("NewKewi")),
         "macos" => non_empty(home).map(|h| {
             PathBuf::from(h)
                 .join("Library")
                 .join("Application Support")
-                .join("Prism")
+                .join("NewKewi")
         }),
         _ => {
             if let Some(x) = non_empty(xdg_data_home) {
                 // XDG requires an absolute path; ignore relative values.
                 if x.to_string_lossy().starts_with('/') {
-                    return Some(PathBuf::from(x).join("prism"));
+                    return Some(PathBuf::from(x).join("newkewi"));
                 }
             }
-            non_empty(home).map(|h| PathBuf::from(h).join(".local").join("share").join("prism"))
+            non_empty(home).map(|h| PathBuf::from(h).join(".local").join("share").join("newkewi"))
         }
     }
 }
@@ -84,7 +84,7 @@ pub fn portable_data_dir(exe: &Path) -> Option<PathBuf> {
     dir.join(PORTABLE_MARKER).exists().then(|| dir.join("data"))
 }
 
-/// The Prism app data dir for the current user (see module docs).
+/// The New Kewi Downloader data dir for the current user (see module docs).
 pub fn data_dir() -> Option<PathBuf> {
     if let Some(dir) = non_empty(env::var_os(DATA_DIR_ENV)) {
         return Some(PathBuf::from(dir));
@@ -138,7 +138,7 @@ fn home_dir_os() -> Option<OsString> {
 pub const APP_PATH_FILE_NAME: &str = "app-path";
 
 /// Resolution of the app executable to launch (pure, testable):
-/// 1. `env_override` (`PRISM_APP_PATH`) if non-empty;
+/// 1. `env_override` (`NEWKEWI_APP_PATH`) if non-empty;
 /// 2. the path stored in `<data dir>/app-path`, if that file exists and the target exists;
 /// 3. the app binary next to `host_exe`.
 pub fn resolve_app_executable(
@@ -166,10 +166,10 @@ pub fn resolve_app_executable(
         .unwrap_or_else(|| PathBuf::from(crate::APP_BINARY_NAME))
 }
 
-/// Where the app executable is: `PRISM_APP_PATH` → `<data dir>/app-path` →
+/// Where the app executable is: `NEWKEWI_APP_PATH` → `<data dir>/app-path` →
 /// next to `host_exe` (see [`resolve_app_executable`]).
 ///
-/// On macOS the host lives in `Prism.app/Contents/MacOS/` next to `prism`, so
+/// On macOS the host lives in `New Kewi Downloader.app/Contents/MacOS/` next to `newkewi`, so
 /// the same "sibling file" rule applies on every OS. On Linux AppImage installs
 /// the app copies the host to `<data dir>/bin/` and writes `app-path`.
 pub fn app_executable(host_exe: &Path) -> PathBuf {
@@ -245,19 +245,19 @@ mod tests {
         );
         assert_eq!(
             d,
-            Some(PathBuf::from("C:/Users/u/AppData/Roaming").join("Prism"))
+            Some(PathBuf::from("C:/Users/u/AppData/Roaming").join("NewKewi"))
         );
     }
 
     #[test]
     fn linux_xdg_and_default() {
         let d = resolve_data_dir("linux", None, None, os("/home/u"), os("/data"));
-        assert_eq!(d, Some(PathBuf::from("/data/prism")));
+        assert_eq!(d, Some(PathBuf::from("/data/newkewi")));
         // relative XDG_DATA_HOME is ignored per spec
         let d = resolve_data_dir("linux", None, None, os("/home/u"), os("rel"));
-        assert_eq!(d, Some(PathBuf::from("/home/u/.local/share/prism")));
+        assert_eq!(d, Some(PathBuf::from("/home/u/.local/share/newkewi")));
         let d = resolve_data_dir("linux", os(""), None, os("/home/u"), None);
-        assert_eq!(d, Some(PathBuf::from("/home/u/.local/share/prism")));
+        assert_eq!(d, Some(PathBuf::from("/home/u/.local/share/newkewi")));
     }
 
     #[test]
@@ -265,11 +265,11 @@ mod tests {
         let d = resolve_data_dir("macos", None, None, os("/Users/u"), None);
         assert_eq!(
             d,
-            Some(PathBuf::from("/Users/u/Library/Application Support/Prism"))
+            Some(PathBuf::from("/Users/u/Library/Application Support/NewKewi"))
         );
     }
 
-    /// The portable zip puts the host next to `prism.exe` and `portable.txt`: the host must
+    /// The portable zip puts the host next to `newkewi.exe` and `portable.txt`: the host must
     /// read `ipc.json` from the same `data` folder the portable app writes it to.
     #[test]
     fn portable_marker_moves_the_data_dir_next_to_the_exe() {

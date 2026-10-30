@@ -127,9 +127,9 @@ async fn health(
     // but only reveals that Prism runs; the version is shown to authenticated callers.
     let authed = authorized(&state, &headers);
     let body = if authed {
-        serde_json::json!({"ok": true, "app": "prism", "version": env!("CARGO_PKG_VERSION")})
+        serde_json::json!({"ok": true, "app": "newkewi", "version": env!("CARGO_PKG_VERSION")})
     } else {
-        serde_json::json!({"ok": true, "app": "prism"})
+        serde_json::json!({"ok": true, "app": "newkewi"})
     };
     (StatusCode::OK, Json(body))
 }

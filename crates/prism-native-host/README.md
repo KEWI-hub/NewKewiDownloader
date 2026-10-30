@@ -36,7 +36,7 @@ App data dir:
 | Windows | `%APPDATA%\Prism` |
 | macOS | `~/Library/Application Support/Prism` |
 | Linux / other Unix | `$XDG_DATA_HOME/prism` (if set and absolute), else `~/.local/share/prism` |
-| any | **`PRISM_DATA_DIR`** env var overrides all of the above (tests, portable/dev setups) |
+| any | **`NEWKEWI_DATA_DIR`** env var overrides all of the above (tests, portable/dev setups) |
 
 Files in the data dir:
 
@@ -44,7 +44,7 @@ Files in the data dir:
 |---|---|---|
 | `ipc.json` | app | `{"port": u16, "token": "<hex, 64 chars recommended>", "pid": u32, "version": "x.y.z"}`. Write it atomically (temp file + rename) **after** the IPC server listens; delete it on clean exit. The host `stat`s it on every request and re-reads it when it changes, so a removed file is detected instantly (a stale file pointing at a dead port costs one 600 ms connect timeout). |
 | `app-path` | app (optional) | One line: absolute path of the app launcher. Needed for AppImage (mount path changes every run): the app copies the host to `<data dir>/bin/prism-native-host` (stable path for the manifests) and writes `$APPIMAGE` here. Harmless on other OSes. |
-| `logs/native-host.log` (+ `.log.1`) | host | Rotated at 1 MiB. Debug lines only with `PRISM_HOST_DEBUG=1`. stdout is never used for anything but protocol frames. |
+| `logs/native-host.log` (+ `.log.1`) | host | Rotated at 1 MiB. Debug lines only with `NEWKEWI_HOST_DEBUG=1`. stdout is never used for anything but protocol frames. |
 | `native-messaging/dev.prism.host.chromium.json`, `…firefox.json` | `register` (Windows) | Host manifests the registry keys point to. |
 
 ## Relay behaviour
@@ -69,7 +69,7 @@ message does not carry `"noLaunch": true`), the host launches the app with `--ba
 CREATE_NEW_PROCESS_GROUP` (+ `CREATE_BREAKAWAY_FROM_JOB` when the browser's job allows it,
 so the app survives the browser closing the port), own process group on Unix — then polls
 for `ipc.json` + a successful `GET /v1/health` for up to **8 s**. Only one launch happens at a
-time. App executable resolution order: env **`PRISM_APP_PATH`** → the path in
+time. App executable resolution order: env **`NEWKEWI_APP_PATH`** → the path in
 **`<data dir>/app-path`** (if the file and its target exist) → **`prism(.exe)` next to the
 host binary** (on macOS the host sits in `Prism.app/Contents/MacOS/` next to `prism`).
 
@@ -139,7 +139,7 @@ cargo test -p prism-native-host
 * unit: framing (fragmented reads, 5 MiB frames, limits), argument detection (Chrome/Firefox
   invocations vs subcommands), data-dir and app-path resolution, manifest generation,
   a sandboxed register → status → unregister cycle (temp dir + `HKCU\Software\PrismTest<pid>`).
-* `tests/relay.rs`: spawns the built binary against a std-only mock app (`PRISM_DATA_DIR`):
+* `tests/relay.rs`: spawns the built binary against a std-only mock app (`NEWKEWI_DATA_DIR`):
   relay + latency, malformed JSON, `hostPing`, concurrency (slow request doesn't block a fast
   one), oversized reply, structured app errors, 2 MiB incoming message, EOF → exit 0,
   `noLaunch` → `app_not_running`, missing app → `app_unreachable`, stale `ipc.json`,

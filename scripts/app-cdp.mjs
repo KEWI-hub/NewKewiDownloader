@@ -53,7 +53,7 @@ switch (cmd) {
       stdio: "ignore",
       env: {
         ...process.env,
-        PRISM_DATA_DIR: dataDir,
+        NEWKEWI_DATA_DIR: dataDir,
         WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
       },
     });

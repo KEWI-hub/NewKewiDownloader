@@ -70,13 +70,13 @@ const invoke = (cmd, args) => main.evaluate(([c, a]) => window.__TAURI_INTERNALS
 
 let context;
 try {
-  execFileSync(hostExe, ['register', '--browsers', 'chromium', '--manifest-dir', join(tmp, 'nm')], { env: { ...process.env, PRISM_DATA_DIR: dataDir } });
+  execFileSync(hostExe, ['register', '--browsers', 'chromium', '--manifest-dir', join(tmp, 'nm')], { env: { ...process.env, NEWKEWI_DATA_DIR: dataDir } });
   const before = (await invoke('integration_status')).lastSeen ?? 0;
   context = await chromium.launchPersistentContext(join(tmp, 'profile'), {
     ...(chromePath ? { executablePath: chromePath } : { channel: 'chromium' }),
     headless: true,
     args: [`--disable-extensions-except=${extDir}`, `--load-extension=${extDir}`],
-    env: { ...process.env, PRISM_DATA_DIR: dataDir },
+    env: { ...process.env, NEWKEWI_DATA_DIR: dataDir },
   });
   const page = await context.newPage();
   const cdp = await context.newCDPSession(page);
