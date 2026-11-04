@@ -489,12 +489,14 @@ pub(crate) async fn probe(
         Ok(Err(e)) => Err(ProbeFailure {
             needs_auth: matches!(e, EngineError::AuthRequired),
             // A 403 for a link the browser just downloaded means the server lets only the browser
-            // in (a bot check by browser fingerprint, like Cloudflare's on softpedia.com).
+            // in (a bot check by browser fingerprint, like Cloudflare's on softpedia.com). A
+            // redirect left unfollowed has no Location: Telegram Web's `/k/stream/…` and
+            // `/a/progressive/…` links exist only in the page's service worker and answer 302.
             browser_only: matches!(
                 e,
                 EngineError::BrowserCheck
                     | EngineError::WebPage
-                    | EngineError::Http { status: 403 }
+                    | EngineError::Http { status: 403 | 300..=399 }
             ),
             message: e.user_message(),
         }),

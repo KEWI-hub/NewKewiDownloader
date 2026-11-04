@@ -796,6 +796,8 @@ async fn browser_downloads_only_a_browser_can_get_are_left_to_it() {
             ),
             // A plain 403 for a link the browser itself just got: only the browser is let in.
             (server.url("/status/403"), "Nero-8.3.2.1.exe"),
+            // A redirect with nowhere to go, as Telegram Web answers its service-worker links.
+            (server.url("/status/302"), "telegram-video.mp4"),
         ] {
             let reply = core.handle(msg(url, name)).await;
             assert_eq!(reply["ok"], true, "{reply}");
@@ -813,7 +815,7 @@ async fn browser_downloads_only_a_browser_can_get_are_left_to_it() {
             left += 1;
         }
     }
-    assert_eq!(left, 6);
+    assert_eq!(left, 8);
 
     // Other answers are Prism's to show, as before (the dialog explains a 404).
     let reply = core
