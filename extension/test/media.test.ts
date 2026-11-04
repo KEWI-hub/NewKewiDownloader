@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type MediaItem, addMedia, classifyMedia, elementMedia, elementSources, humanSize, isIgnoredMediaUrl, linkedinCommentaryPath, linkedinPostPath, mediaDetail, mediaKey, mediaLabel, postUrl, qualityFromUrl, totalSize, visibleMedia } from '../src/shared/media';
+import { type MediaItem, addMedia, classifyMedia, elementMedia, elementSources, humanSize, isIgnoredMediaUrl, linkedinCommentaryPath, linkedinPostPath, mediaDetail, mediaKey, mediaLabel, postUrl, qualityFromUrl, totalSize, videoTitle, visibleMedia } from '../src/shared/media';
 
 const LI = 'https://dms.licdn.com/playlist/vid/v2/D5610AQFKo9M0zqY2_g';
 
@@ -242,5 +242,17 @@ describe('linkedinCommentaryPath (LinkedIn newer UI: the post text block)', () =
   });
   it('the paths count as single posts', () => {
     expect(postUrl('/feed/update/urn:li:share:7400000000000000123/', 'https://www.linkedin.com/search/results/content/')).toBe('https://www.linkedin.com/feed/update/urn:li:share:7400000000000000123');
+  });
+});
+
+describe('the title a video is saved under', () => {
+  it('takes the tab page title over a player iframe title', () => {
+    expect(videoTitle('Video Player', 7, 'ข่าวเช้า วันนี้ - Example', 'https://example.com/news/1')).toBe('ข่าวเช้า วันนี้ - Example');
+  });
+  it('keeps the frame title in the top frame, or when the tab has no real title', () => {
+    expect(videoTitle('My clip', 0, 'Other', 'https://e.com/')).toBe('My clip');
+    expect(videoTitle('Video Player', 7, '', 'https://e.com/')).toBe('Video Player');
+    expect(videoTitle('Video Player', 7, 'https://e.com/x', 'https://e.com/x')).toBe('Video Player');
+    expect(videoTitle('Video Player', 7, undefined)).toBe('Video Player');
   });
 });

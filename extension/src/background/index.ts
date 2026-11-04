@@ -5,7 +5,7 @@
 import { IS_FIREFOX, api } from '../shared/api';
 import type { NativeError } from '../shared/correlator';
 import type { ActionResult, InternalMessage, PopupState } from '../shared/messages';
-import { visibleMedia } from '../shared/media';
+import { videoTitle, visibleMedia } from '../shared/media';
 import { PROTOCOL_VERSION } from '../shared/protocol';
 import { normalizeSettings } from '../shared/settings';
 import { reflectConnection, setTabCount } from './badge';
@@ -84,9 +84,9 @@ async function handle(msg: InternalMessage, sender: chrome.runtime.MessageSender
       bypass.record(msg.url, Date.now());
       return { ok: true };
     case 'videoOptions':
-      return videoOptions(msg, sender.tab);
+      return videoOptions({ ...msg, title: videoTitle(msg.title, sender.frameId, sender.tab?.title, sender.tab?.url) }, sender.tab);
     case 'videoDownload':
-      await sendVideo(msg.pageUrl, msg.title, msg.option, sender.tab);
+      await sendVideo(msg.pageUrl, videoTitle(msg.title, sender.frameId, sender.tab?.title, sender.tab?.url), msg.option, sender.tab);
       return { ok: true } satisfies ActionResult;
     case 'popupState': {
       const [state, media, tab] = await Promise.all([getState(), getTabMedia(msg.tabId), tabInfo(msg.tabId)]);

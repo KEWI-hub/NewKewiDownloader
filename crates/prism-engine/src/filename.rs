@@ -6,9 +6,22 @@ use std::path::{Path, PathBuf};
 use percent_encoding::percent_decode_str;
 use url::Url;
 
-/// Maximum file-name length in bytes (well below the 255 limit, leaving room for
-/// ` (123)` and the part suffix).
-const MAX_NAME_BYTES: usize = 200;
+/// Maximum file-name length, extension included, in UTF-16 units: what Windows counts against
+/// its 255 limit (a Thai or accented letter is one unit there, but 2–3 bytes in UTF-8). The
+/// part file may then go past 255 with its suffix; [`part_path_for`] shortens it.
+const MAX_NAME_UNITS: usize = 250;
+
+/// The 255 limit a file-system name has (UTF-16 units on Windows, bytes elsewhere).
+const NAME_LIMIT: usize = 255;
+
+/// Length of a name as the file system counts it against [`NAME_LIMIT`].
+fn name_len(s: &str) -> usize {
+    if cfg!(windows) {
+        s.encode_utf16().count()
+    } else {
+        s.len()
+    }
+}
 
 /// Fallback when nothing better is known.
 pub const DEFAULT_NAME: &str = "download";
@@ -215,20 +228,28 @@ pub fn sanitize(name: &str) -> String {
     if is_reserved {
         s.insert(0, '_');
     }
-    truncate_keep_extension(&s, MAX_NAME_BYTES)
+    // Elsewhere a name is limited in bytes; leave room there for ` (123)` and the part suffix.
+    let max = if cfg!(windows) { MAX_NAME_UNITS } else { 200 };
+    truncate_keep_extension(&s, max)
 }
 
+/// Shortens `s` to `max` (as [`name_len`] counts), keeping a short extension.
 fn truncate_keep_extension(s: &str, max: usize) -> String {
-    if s.len() <= max {
+    if name_len(s) <= max {
         return s.to_string();
     }
     let (stem, ext) = match s.rfind('.') {
         Some(i) if i > 0 && s.len() - i <= 16 => (&s[..i], &s[i..]),
         _ => (s, ""),
     };
-    let mut cut = max.saturating_sub(ext.len());
-    while cut > 0 && !stem.is_char_boundary(cut) {
-        cut -= 1;
+    let room = max.saturating_sub(name_len(ext));
+    let mut cut = 0;
+    for (i, c) in stem.char_indices() {
+        let end = i + c.len_utf8();
+        if name_len(&stem[..end]) > room {
+            break;
+        }
+        cut = end;
     }
     format!("{}{}", stem[..cut].trim_end_matches(['.', ' ']), ext)
 }
@@ -243,7 +264,17 @@ pub fn numbered_name(name: &str, n: u32) -> String {
 }
 
 /// Path of the in-progress file for a final path.
-pub(crate) fn part_path_for(final_path: &Path, suffix: &str) -> PathBuf {
+pub fn part_path_for(final_path: &Path, suffix: &str) -> PathBuf {
+    let name = final_path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    // A name near the limit can't take the suffix: the part file gets a shorter (but always the
+    // same, so a resume finds it) name; it is renamed to the full name at the end.
+    if name_len(&name) + name_len(suffix) > NAME_LIMIT {
+        let short = truncate_keep_extension(&name, NAME_LIMIT - name_len(suffix));
+        return final_path.with_file_name(format!("{short}{suffix}"));
+    }
     let mut s = final_path.as_os_str().to_owned();
     s.push(suffix);
     PathBuf::from(s)
@@ -375,7 +406,35 @@ mod tests {
         assert_eq!(sanitize("..."), "download");
         let long = format!("{}.zip", "é".repeat(300));
         let s = sanitize(&long);
-        assert!(s.len() <= MAX_NAME_BYTES && s.ends_with(".zip"), "{s}");
+        assert!(s.len() <= 200 || cfg!(windows), "{s}");
+        assert!(name_len(&s) <= MAX_NAME_UNITS && s.ends_with(".zip"), "{s}");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_long_thai_title_keeps_250_letters_with_its_extension() {
+        let title = format!("{}.mp4", "คลิป".repeat(100)); // 400 letters + 4
+        let s = sanitize(&title);
+        assert_eq!(s.encode_utf16().count(), MAX_NAME_UNITS, "{s}");
+        assert!(s.ends_with(".mp4"));
+        // A short title is left as it is.
+        assert_eq!(sanitize("ข่าวเช้า วันนี้.mp4"), "ข่าวเช้า วันนี้.mp4");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn the_part_file_of_a_250_letter_name_stays_within_255() {
+        let dir = tempfile::tempdir().unwrap();
+        let name = format!("{}.mp4", "ก".repeat(246));
+        let fin = dir.path().join(&name);
+        let part = part_path_for(&fin, ".kewipart");
+        let part_name = part.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(part_name.encode_utf16().count() <= NAME_LIMIT, "{part_name}");
+        assert!(part_name.ends_with(".mp4.kewipart"));
+        assert_eq!(part, part_path_for(&fin, ".kewipart"), "the same each time");
+        std::fs::write(&part, b"x").unwrap();
+        // A short name keeps its plain `name.suffix` part file.
+        assert_eq!(part_path_for(&dir.path().join("a.mp4"), ".kewipart"), dir.path().join("a.mp4.kewipart"));
     }
 
     #[test]

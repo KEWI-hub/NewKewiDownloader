@@ -134,7 +134,7 @@ export async function videoOptions(
     (m.kind === 'hls' || m.kind === 'dash') && budget-- > 0 ? expandStream(m, group, msg.pageUrl, incognito) : Promise.resolve([option(m, group)]);
   const expanded = await Promise.all([...own.map((m) => entries(m, 'element')), ...rest.map((m) => entries(m, 'stream'))]);
   const options = expanded.flat();
-  return { source: 'sniffed', options, ...(notice ? { notice } : {}) };
+  return { source: 'sniffed', title: msg.title, options, ...(notice ? { notice } : {}) };
 }
 
 export async function sendVideo(pageUrl: string, title: string, option: VideoOption, tab: chrome.tabs.Tab | undefined): Promise<void> {

@@ -366,3 +366,14 @@ export function addMedia(list: MediaItem[], item: MediaItem, maxItems = 100): { 
 export function visibleMedia(list: MediaItem[]): MediaItem[] {
   return list.filter((m) => m.kind !== 'segment');
 }
+
+/**
+ * The title a video is saved under. The video button may sit in a player iframe whose own
+ * title is the player's ("Video Player"); the page in the tab names the video, so a frame's
+ * title gives way to the tab's when the tab has one.
+ */
+export function videoTitle(frameTitle: string, frameId: number | undefined, tabTitle: string | undefined, tabUrl?: string): string {
+  const tab = tabTitle?.trim();
+  const usable = !!tab && tab !== tabUrl && !/^https?:\/\//i.test(tab);
+  return frameId !== undefined && frameId !== 0 && usable ? tab! : frameTitle;
+}

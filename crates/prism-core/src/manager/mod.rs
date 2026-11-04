@@ -1340,9 +1340,7 @@ fn remove_partial_files(item: &DownloadItem) {
             let _ = std::fs::remove_file(&part);
         }
     }
-    let mut part = item.path().into_os_string();
-    part.push(".kewipart");
-    let part = PathBuf::from(part);
+    let part = prism_engine::filename::part_path_for(&item.path(), ".kewipart");
     let _ = std::fs::remove_file(&part);
     let mut side = part.into_os_string();
     side.push(".d");
