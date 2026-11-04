@@ -80,6 +80,16 @@ jobs:
           done
           # Signed in-app update bundles only for official releases (needs the signing key).
           npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} --config '{"bundle":{"createUpdaterArtifacts":true}}'
+      - name: File names without spaces
+        # The bundles are named after the product ("New Kewi Downloader_1.1.8_x64-setup.exe");
+        # GitHub turns the spaces in a release file's name into dots, and latest.json must name
+        # the files as they are published, so they become NewKewi_1.1.8_x64-setup.exe and so on.
+        shell: bash
+        run: |
+          set -euo pipefail
+          find target/${{ matrix.target }}/release/bundle -type f -name 'New Kewi Downloader*' | while IFS= read -r f; do
+            n=$(basename "$f"); mv "$f" "$(dirname "$f")/NewKewi${n#New Kewi Downloader}"
+          done
       - name: Name the macOS update bundle per architecture
         if: runner.os == 'macOS'
         run: |
@@ -87,23 +97,23 @@ jobs:
           M=target/${{ matrix.target }}/release/bundle/macos
           V=$(node -p "require('./app/src-tauri/tauri.conf.json').version")
           A=$([ "${{ matrix.target }}" = aarch64-apple-darwin ] && echo aarch64 || echo x64)
-          mv "$M/Prism.app.tar.gz" "$M/Prism_${V}_${A}.app.tar.gz"
-          mv "$M/Prism.app.tar.gz.sig" "$M/Prism_${V}_${A}.app.tar.gz.sig"
+          mv "$M/NewKewi.app.tar.gz" "$M/NewKewi_${V}_${A}.app.tar.gz"
+          mv "$M/NewKewi.app.tar.gz.sig" "$M/NewKewi_${V}_${A}.app.tar.gz.sig"
       - name: DMG with the browser extension next to the app (macOS)
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
           B=target/${{ matrix.target }}/release/bundle
           DMG=$(ls "$B"/dmg/*.dmg)
-          STAGE=$(mktemp -d)/Prism
+          STAGE=$(mktemp -d)/NewKewi
           mkdir -p "$STAGE/Browser Extension"
-          cp -R "$B/macos/Prism.app" "$STAGE/"
+          cp -R "$B/macos/New Kewi Downloader.app" "$STAGE/"
           ln -s /Applications "$STAGE/Applications"
           cp -R extension/build/chromium "$STAGE/Browser Extension/Chrome, Edge, Brave"
           cp -R extension/build/firefox "$STAGE/Browser Extension/Firefox"
           cp packaging/macos/README-extension.txt "$STAGE/Browser Extension/How to install.txt"
           rm -f "$DMG"
-          hdiutil create -volname "Prism" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+          hdiutil create -volname "New Kewi Downloader" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
           hdiutil imageinfo "$DMG" | head -5
       - name: Portable zip (Windows)
         if: runner.os == 'Windows'
