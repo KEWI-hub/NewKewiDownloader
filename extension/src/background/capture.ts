@@ -107,17 +107,20 @@ export async function maybeHandOff({ candidate, req, incognito }: HandOffInput):
   }
 }
 
-async function cancelAndErase(id: number): Promise<void> {
+/** Cancels and erases a browser download; false when it couldn't be cancelled (still running). */
+async function cancelAndErase(id: number): Promise<boolean> {
+  let cancelled = true;
   try {
     await api.downloads.cancel(id);
   } catch {
-    /* already gone */
+    cancelled = false; // already gone, or it can't be stopped
   }
   try {
     await api.downloads.erase({ id });
   } catch {
     /* ignore */
   }
+  return cancelled;
 }
 
 // ---- Chromium -------------------------------------------------------------
@@ -155,9 +158,10 @@ async function onDetermining(item: chrome.downloads.DownloadItem, suggest: (s?: 
       incognito: item.incognito,
     });
     if (!accepted) return release();
-    // Cancel before releasing so no Save-As dialog ever appears.
-    await cancelAndErase(item.id);
-    release();
+    // Cancel so no Save-As dialog ever appears. A cancelled download needs no name: suggesting
+    // one for it makes Chrome log "Unchecked runtime.lastError: Invalid downloadId".
+    if (await cancelAndErase(item.id)) released = true;
+    else release();
   } catch (e) {
     console.error('[prism] capture error', e);
     release();
