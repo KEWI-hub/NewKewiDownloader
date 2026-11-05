@@ -677,6 +677,10 @@ pub fn plan_ytdlp(
             FILE_PRINT,
             "--no-mtime",
             "--windows-filenames",
+            // Names within 250 letters with the extension, as on the other download paths; yt-dlp
+            // counts without the extension, and its .fNNN.mp4.part files need the rest of 255.
+            "--trim-filenames",
+            "235",
             "--no-playlist",
         ],
     );

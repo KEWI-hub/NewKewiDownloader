@@ -214,7 +214,7 @@ fn ytdlp_args_video() {
     assert!(a.contains("--progress-template download:PRISM %(progress)j"));
     assert!(a.contains("--progress-template postprocess:PRISMPP %(progress)j"));
     assert!(a.contains("--print after_move:PRISMFILE %(filepath)j"));
-    assert!(a.contains("--no-mtime --windows-filenames --no-playlist"));
+    assert!(a.contains("--no-mtime --windows-filenames --trim-filenames 235 --no-playlist"));
     assert!(a.ends_with("-P out -o %(title)s [%(id)s].%(ext)s"));
     assert_eq!(job.url, "https://www.youtube.com/watch?v=HDRtest0001");
 }
@@ -408,5 +408,5 @@ fn templates_and_sanitizing() {
     assert_eq!(sanitize_component("CON.txt"), "_CON.txt");
     assert_eq!(sanitize_component("a\tb\nc. "), "a b c");
     assert_eq!(sanitize_component("   "), "_");
-    assert_eq!(sanitize_component(&"x".repeat(300)).chars().count(), 180);
+    assert_eq!(sanitize_component(&"x".repeat(300)).chars().count(), 250);
 }

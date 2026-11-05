@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type MediaItem, addMedia, classifyMedia, elementMedia, elementSources, humanSize, isIgnoredMediaUrl, linkedinCommentaryPath, linkedinPostPath, mediaDetail, mediaKey, mediaLabel, postUrl, qualityFromUrl, totalSize, videoTitle, visibleMedia } from '../src/shared/media';
+import { type MediaItem, addMedia, classifyMedia, elementMedia, elementSources, humanSize, isIgnoredMediaUrl, linkedinCommentaryPath, linkedinPostPath, mediaDetail, mediaKey, mediaLabel, postUrl, qualityFromUrl, totalSize, stripSiteName, videoTitle, visibleMedia } from '../src/shared/media';
 
 const LI = 'https://dms.licdn.com/playlist/vid/v2/D5610AQFKo9M0zqY2_g';
 
@@ -247,12 +247,29 @@ describe('linkedinCommentaryPath (LinkedIn newer UI: the post text block)', () =
 
 describe('the title a video is saved under', () => {
   it('takes the tab page title over a player iframe title', () => {
-    expect(videoTitle('Video Player', 7, 'ข่าวเช้า วันนี้ - Example', 'https://example.com/news/1')).toBe('ข่าวเช้า วันนี้ - Example');
+    expect(videoTitle('Video Player', 7, 'ข่าวเช้า วันนี้ - Example', 'https://example.com/news/1')).toBe('ข่าวเช้า วันนี้');
   });
   it('keeps the frame title in the top frame, or when the tab has no real title', () => {
     expect(videoTitle('My clip', 0, 'Other', 'https://e.com/')).toBe('My clip');
     expect(videoTitle('Video Player', 7, '', 'https://e.com/')).toBe('Video Player');
     expect(videoTitle('Video Player', 7, 'https://e.com/x', 'https://e.com/x')).toBe('Video Player');
     expect(videoTitle('Video Player', 7, undefined)).toBe('Video Player');
+  });
+});
+
+describe('the site name in a page title', () => {
+  it('is dropped after or before the title', () => {
+    expect(stripSiteName('ข่าวเช้า วันนี้ - ตัวอย่าง.com', 'https://xn--o3cw4h.com/a')).toBe('ข่าวเช้า วันนี้');
+    expect(stripSiteName('My Clip | Example.org', 'https://example.org/v')).toBe('My Clip');
+    expect(stripSiteName('Funny cats - YouTube', 'https://www.youtube.com/watch?v=1')).toBe('Funny cats');
+    expect(stripSiteName('Dailymotion :: Great goal', 'https://www.dailymotion.com/video/x')).toBe('Great goal');
+  });
+  it('keeps titles whose parts are not the site', () => {
+    expect(stripSiteName('Artist - Song', 'https://music.example.com/x')).toBe('Artist - Song');
+    expect(stripSiteName('Plain title', 'https://e.com/')).toBe('Plain title');
+    expect(stripSiteName('A-B title', 'https://e.com/')).toBe('A-B title');
+  });
+  it('applies to the title a video is saved under', () => {
+    expect(videoTitle('Video Player', 7, 'Clip name - Some.site', 'https://some.site/x')).toBe('Clip name');
   });
 });

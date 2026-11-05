@@ -6,7 +6,9 @@ use std::path::PathBuf;
 
 use crate::model::VideoInfo;
 
-const MAX_COMPONENT_CHARS: usize = 180;
+/// Longest file name, extension included, in UTF-16 units (what Windows counts against its
+/// 255 limit); the same as the engine's, so both download paths cut a title alike.
+const MAX_COMPONENT_UNITS: usize = 250;
 
 /// Replace characters that are invalid in file names on Windows (and `/` everywhere).
 pub fn sanitize_component(s: &str) -> String {
@@ -31,13 +33,8 @@ pub fn sanitize_component(s: &str) -> String {
         out = out.replace("  ", " ");
     }
     let mut out = out.trim().trim_end_matches(['.', ' ']).to_string();
-    if out.chars().count() > MAX_COMPONENT_CHARS {
-        out = out
-            .chars()
-            .take(MAX_COMPONENT_CHARS)
-            .collect::<String>()
-            .trim_end_matches(['.', ' '])
-            .to_string();
+    if out.encode_utf16().count() > MAX_COMPONENT_UNITS {
+        out = truncate_keep_extension(&out, MAX_COMPONENT_UNITS);
     }
     let upper = out.split('.').next().unwrap_or("").to_ascii_uppercase();
     let reserved = matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL")
@@ -51,6 +48,24 @@ pub fn sanitize_component(s: &str) -> String {
         out = "_".into();
     }
     out
+}
+
+/// Shortens `s` to `max` UTF-16 units, keeping a short extension (`.mp4`) whole.
+fn truncate_keep_extension(s: &str, max: usize) -> String {
+    let (stem, ext) = match s.rfind('.') {
+        Some(i) if i > 0 && s.len() - i <= 8 && s[i + 1..].chars().all(|c| c.is_ascii_alphanumeric()) => (&s[..i], &s[i..]),
+        _ => (s, ""),
+    };
+    let room = max.saturating_sub(ext.encode_utf16().count());
+    let mut used = 0;
+    let stem: String = stem
+        .chars()
+        .take_while(|c| {
+            used += c.len_utf16();
+            used <= room
+        })
+        .collect();
+    format!("{}{ext}", stem.trim_end_matches(['.', ' ']))
 }
 
 fn field(info: &VideoInfo, name: &str, ext: &str) -> Option<String> {
@@ -141,4 +156,18 @@ pub fn temp_stem(info: &VideoInfo) -> String {
         .take(64)
         .collect();
     if s.is_empty() { "video".into() } else { s }
+}
+
+#[cfg(test)]
+mod length_tests {
+    use super::*;
+
+    #[test]
+    fn a_long_title_keeps_250_units_and_its_extension() {
+        let name = format!("{} [abc].mp4", "คลิป".repeat(100));
+        let s = sanitize_component(&name);
+        assert_eq!(s.encode_utf16().count(), MAX_COMPONENT_UNITS, "{s}");
+        assert!(s.ends_with(".mp4"), "{s}");
+        assert_eq!(sanitize_component("short title [x].mp4"), "short title [x].mp4");
+    }
 }

@@ -375,5 +375,41 @@ export function visibleMedia(list: MediaItem[]): MediaItem[] {
 export function videoTitle(frameTitle: string, frameId: number | undefined, tabTitle: string | undefined, tabUrl?: string): string {
   const tab = tabTitle?.trim();
   const usable = !!tab && tab !== tabUrl && !/^https?:\/\//i.test(tab);
-  return frameId !== undefined && frameId !== 0 && usable ? tab! : frameTitle;
+  return stripSiteName(frameId !== undefined && frameId !== 0 && usable ? tab! : frameTitle, tabUrl);
+}
+
+/** A spaced separator between a page title and the site name (" - ", " | ", " – ", " :: " …). */
+const TITLE_SEPARATOR = /\s+(?:[-|–—·•»:]|::)\s+/g;
+
+/**
+ * "Video name - Site.com" → "Video name". Pages put the site name before or after the title; it
+ * is dropped when it looks like the site: a domain ("example.com"), or the name in the page
+ * host ("YouTube" on www.youtube.com). Other parts ("Artist - Song") stay.
+ */
+export function stripSiteName(title: string, pageUrl?: string): string {
+  const t = title.trim();
+  const seps = [...t.matchAll(TITLE_SEPARATOR)];
+  if (!seps.length) return t;
+  let label = "";
+  try {
+    const host = new URL(pageUrl ?? "").hostname.replace(/^www\./, "").split(".");
+    label = (host.length > 1 ? host.slice(0, -1) : host).sort((a, b) => b.length - a.length)[0] ?? "";
+  } catch {
+    /* no page address */
+  }
+  const norm = (x: string) => x.toLowerCase().replace(/[\s._-]/g, "");
+  const isSite = (part: string) => {
+    const p = part.trim();
+    if (/^[^\s/]+\.[a-z]{2,}$/i.test(p)) return true; // a domain
+    const n = norm(p);
+    const l = norm(label);
+    return n.length >= 3 && l.length >= 3 && !l.startsWith("xn") && (n.includes(l) || l.includes(n));
+  };
+  const last = seps[seps.length - 1]!;
+  const tail = t.slice(last.index! + last[0].length);
+  if (isSite(tail)) return t.slice(0, last.index).trim();
+  const first = seps[0]!;
+  const head = t.slice(0, first.index);
+  if (isSite(head)) return t.slice(first.index! + first[0].length).trim();
+  return t;
 }
