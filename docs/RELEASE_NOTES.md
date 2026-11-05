@@ -43,8 +43,8 @@ unpacked extension.
 | Windows 10 / 11 | `NewKewi_1.1.9_x64-setup.exe` (recommended) · `NewKewi_1.1.9_x64_en-US.msi` · `NewKewi-1.1.9-windows-x64-portable.zip` |
 | macOS — Apple Silicon | `NewKewi_1.1.9_aarch64.dmg` |
 | macOS — Intel | `NewKewi_1.1.9_x64.dmg` |
-| Ubuntu / Debian / Mint | `new-kewi-downloader_1.1.9_amd64.deb` |
-| Fedora / openSUSE | `new-kewi-downloader-1.1.9-1.x86_64.rpm` |
+| Ubuntu / Debian / Mint | `NewKewi_1.1.9_amd64.deb` |
+| Fedora / openSUSE | `NewKewi-1.1.9-1.x86_64.rpm` |
 | Any Linux | `NewKewi_1.1.9_amd64.AppImage` |
 
 The browser extension is in `newkewi-chromium.zip` (Chrome, Edge, Brave) and
